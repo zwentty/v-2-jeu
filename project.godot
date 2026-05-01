@@ -13,6 +13,14 @@ config_version=5
 config/name="V2jeu"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
+; Scène lancée au démarrage du jeu
+run/main_scene="res://scenes/world/world.tscn"
+
+[display]
+
+; Résolution de la fenêtre de jeu
+window/size/viewport_width=1280
+window/size/viewport_height=720
 
 [physics]
 

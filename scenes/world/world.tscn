@@ -1,0 +1,167 @@
+[gd_scene load_steps=5 format=3]
+
+; -----------------------------------------------------------------------
+; RESSOURCES EXTERNES
+; -----------------------------------------------------------------------
+
+; On charge la scène du joueur comme une ressource.
+; Dans le nœud Player plus bas, on l'instanciera avec "instance=".
+; C'est comme un "prefab" : une scène réutilisable qu'on place dans une autre.
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1"]
+
+; -----------------------------------------------------------------------
+; SOUS-RESSOURCES : formes de collision pour les murs et obstacles
+; -----------------------------------------------------------------------
+
+; Mur horizontal (haut et bas) : 2560px de large, 32px de haut
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(2560, 32)
+
+; Mur vertical (gauche et droite) : 32px de large, 1440px de haut
+[sub_resource type="RectangleShape2D" id="2"]
+size = Vector2(32, 1440)
+
+; Obstacle carré (rocher) : 80x80 pixels
+[sub_resource type="RectangleShape2D" id="3"]
+size = Vector2(80, 80)
+
+; -----------------------------------------------------------------------
+; NOEUDS DE LA SCÈNE MONDE
+; -----------------------------------------------------------------------
+
+; --- RACINE ---
+; Node2D simple : conteneur de base pour une scène 2D.
+; Pas de physique, pas de collision. Juste un conteneur.
+[node name="World" type="Node2D"]
+
+; --- SOL ---
+; Polygon2D : couvre toute la carte (2560x1440) avec une couleur verte.
+; Ce nœud est PUREMENT VISUEL. Il n'a pas de collision.
+; Le joueur ne "tombe" pas car c'est un jeu vue de dessus (top-down).
+[node name="Ground" type="Polygon2D" parent="."]
+color = Color(0.25, 0.5, 0.18, 1)
+polygon = PackedVector2Array(0, 0, 2560, 0, 2560, 1440, 0, 1440)
+
+; -----------------------------------------------------------------------
+; MURS (4 bords de la carte)
+; Chaque mur = un StaticBody2D + un Polygon2D (visuel) + un CollisionShape2D
+;
+; StaticBody2D : corps physique IMMOBILE. Il ne bouge jamais.
+; Le joueur peut entrer en collision avec lui, mais il ne se déplace pas.
+; C'est différent de CharacterBody2D (personnage) ou RigidBody2D (objet physique).
+; -----------------------------------------------------------------------
+
+; MUR DU HAUT
+; position = (1280, 16) → centré horizontalement, collé au bord haut
+[node name="WallTop" type="StaticBody2D" parent="."]
+position = Vector2(1280, 16)
+
+[node name="Visual" type="Polygon2D" parent="WallTop"]
+color = Color(0.35, 0.25, 0.15, 1)
+polygon = PackedVector2Array(-1280, -16, 1280, -16, 1280, 16, -1280, 16)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallTop"]
+shape = SubResource("1")
+
+; MUR DU BAS
+; position = (1280, 1424) → centré horizontalement, collé au bord bas
+[node name="WallBottom" type="StaticBody2D" parent="."]
+position = Vector2(1280, 1424)
+
+[node name="Visual" type="Polygon2D" parent="WallBottom"]
+color = Color(0.35, 0.25, 0.15, 1)
+polygon = PackedVector2Array(-1280, -16, 1280, -16, 1280, 16, -1280, 16)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallBottom"]
+shape = SubResource("1")
+
+; MUR GAUCHE
+; position = (16, 720) → collé au bord gauche, centré verticalement
+[node name="WallLeft" type="StaticBody2D" parent="."]
+position = Vector2(16, 720)
+
+[node name="Visual" type="Polygon2D" parent="WallLeft"]
+color = Color(0.35, 0.25, 0.15, 1)
+polygon = PackedVector2Array(-16, -720, 16, -720, 16, 720, -16, 720)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallLeft"]
+shape = SubResource("2")
+
+; MUR DROIT
+; position = (2544, 720) → collé au bord droit, centré verticalement
+[node name="WallRight" type="StaticBody2D" parent="."]
+position = Vector2(2544, 720)
+
+[node name="Visual" type="Polygon2D" parent="WallRight"]
+color = Color(0.35, 0.25, 0.15, 1)
+polygon = PackedVector2Array(-16, -720, 16, -720, 16, 720, -16, 720)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallRight"]
+shape = SubResource("2")
+
+; -----------------------------------------------------------------------
+; OBSTACLES (rochers)
+; Regroupés sous un Node2D "Obstacles" pour garder l'arbre de scène propre.
+; Ce Node2D n'a aucun rôle technique : c'est un dossier organisationnel.
+; -----------------------------------------------------------------------
+[node name="Obstacles" type="Node2D" parent="."]
+
+[node name="Rock1" type="StaticBody2D" parent="Obstacles"]
+position = Vector2(400, 300)
+
+[node name="Visual" type="Polygon2D" parent="Obstacles/Rock1"]
+color = Color(0.5, 0.45, 0.38, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/Rock1"]
+shape = SubResource("3")
+
+[node name="Rock2" type="StaticBody2D" parent="Obstacles"]
+position = Vector2(1000, 650)
+
+[node name="Visual" type="Polygon2D" parent="Obstacles/Rock2"]
+color = Color(0.5, 0.45, 0.38, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/Rock2"]
+shape = SubResource("3")
+
+[node name="Rock3" type="StaticBody2D" parent="Obstacles"]
+position = Vector2(1800, 850)
+
+[node name="Visual" type="Polygon2D" parent="Obstacles/Rock3"]
+color = Color(0.5, 0.45, 0.38, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/Rock3"]
+shape = SubResource("3")
+
+[node name="Rock4" type="StaticBody2D" parent="Obstacles"]
+position = Vector2(700, 1100)
+
+[node name="Visual" type="Polygon2D" parent="Obstacles/Rock4"]
+color = Color(0.5, 0.45, 0.38, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/Rock4"]
+shape = SubResource("3")
+
+[node name="Rock5" type="StaticBody2D" parent="Obstacles"]
+position = Vector2(2100, 400)
+
+[node name="Visual" type="Polygon2D" parent="Obstacles/Rock5"]
+color = Color(0.5, 0.45, 0.38, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/Rock5"]
+shape = SubResource("3")
+
+; -----------------------------------------------------------------------
+; JOUEUR
+; "instance=ExtResource("1")" : on place une instance de player.tscn ici.
+; C'est comme glisser la scène Player depuis le panneau FileSystem de Godot.
+; Le joueur garde son propre arbre interne (Visual, CollisionShape2D, Camera2D).
+; position = (1280, 720) → centre exact de la carte 2560x1440
+; -----------------------------------------------------------------------
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector2(1280, 720)

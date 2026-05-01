@@ -1,0 +1,77 @@
+[gd_scene load_steps=3 format=3]
+
+; -----------------------------------------------------------------------
+; SECTION DES RESSOURCES EXTERNES
+; "ext_resource" = fichier externe chargé dans cette scène.
+; -----------------------------------------------------------------------
+
+; On charge le script player.gd. Il sera attaché au nœud racine.
+; "id=1" est juste un identifiant interne pour que les noeuds puissent y référer.
+[ext_resource type="Script" path="res://scenes/player/player.gd" id="1"]
+
+; -----------------------------------------------------------------------
+; SECTION DES SOUS-RESSOURCES (ressources inline, sans fichier séparé)
+; -----------------------------------------------------------------------
+
+; CircleShape2D : forme de collision RONDE pour le joueur.
+; POURQUOI un cercle et pas un rectangle ?
+; → Un rectangle a des "coins" qui s'accrochent aux murs quand on glisse
+;   le long d'un bord (bug de collage). Un cercle n'a pas de coins,
+;   il glisse parfaitement sur tous les angles.
+; radius = 14 pixels → légèrement plus petit que le carré visuel (16px)
+;   pour donner un feeling "généreux" aux collisions (erreur pardonnée).
+[sub_resource type="CircleShape2D" id="1"]
+radius = 14.0
+
+; -----------------------------------------------------------------------
+; SECTION DES NOEUDS
+; Chaque [node] représente un nœud dans l'arbre de scène.
+; "parent=." signifie que le nœud est enfant de la racine.
+; "parent="Visual"" signifie enfant du nœud nommé "Visual".
+; -----------------------------------------------------------------------
+
+; --- NOEUD RACINE ---
+; CharacterBody2D : nœud de physique 2D pour les personnages contrôlés.
+; C'est différent de RigidBody2D (physique simulée) : ici ON contrôle
+; la vélocité manuellement dans le script.
+; "script = ExtResource("1")" attache player.gd à ce nœud.
+[node name="Player" type="CharacterBody2D"]
+script = ExtResource("1")
+
+; --- REPRÉSENTATION VISUELLE ---
+; Polygon2D : dessine un polygone coloré. C'est notre "sprite temporaire".
+; Plus tard, ce nœud sera remplacé par un Sprite2D avec une vraie image.
+; "parent="."" → enfant direct du nœud Player.
+;
+; color : couleur bleue en RGBA (Rouge, Vert, Bleu, Alpha)
+;   0.2 rouge, 0.5 vert, 0.9 bleu = bleu vif
+;
+; polygon : liste de points qui définissent la forme.
+;   (-16,-16) = coin haut-gauche
+;   ( 16,-16) = coin haut-droit
+;   ( 16, 16) = coin bas-droit
+;   (-16, 16) = coin bas-gauche
+;   → carré de 32x32 pixels centré sur l'origine (0,0) du nœud
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.2, 0.5, 0.9, 1)
+polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
+
+; --- COLLISION ---
+; CollisionShape2D : nœud qui applique une forme de collision au CharacterBody2D.
+; Sans ce nœud, le joueur passerait à travers tous les murs.
+; "shape = SubResource("1")" utilise le CircleShape2D défini plus haut.
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")
+
+; --- CAMÉRA ---
+; Camera2D : suit automatiquement le nœud Player (car elle est son enfant).
+; Elle est attachée au joueur, donc elle bouge avec lui.
+;
+; limit_left/top = 0 → la caméra ne montrera jamais à gauche/au-dessus du bord 0,0
+; limit_right = 2560, limit_bottom = 1440 → taille totale de la carte
+;   La caméra s'arrête aux bords de la carte et ne montre pas l'extérieur.
+[node name="Camera2D" type="Camera2D" parent="."]
+limit_left = 0
+limit_top = 0
+limit_right = 2560
+limit_bottom = 1440
