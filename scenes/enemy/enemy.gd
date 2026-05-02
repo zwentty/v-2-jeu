@@ -6,12 +6,15 @@
 # L'ennemi hérite de CharacterBody2D pour avoir accès à la physique et collisions
 extends CharacterBody2D
 
+# Référence au NavigationAgent2D
+@onready var nav_agent: NavigationAgent2D = $NavigationAgent2D
+
 # -----------------------------------------------------------------------------
 # CONSTANTES
 # =============================================================================
 
 # Vitesse de déplacement de l'ennemi en pixels par seconde
-const SPEED = 250.0
+const SPEED = 400.0
 
 # Dégâts infligés au joueur au contact
 const DAMAGE_AMOUNT = 1
@@ -29,6 +32,8 @@ const DETECTION_RANGE = 500.0
 # Référence au joueur (trouvée automatiquement)
 var player: Node2D = null
 
+
+
 # Coodown pour les dégâts (évite que l'ennemi inflige des dégâts trop souvent)
 var damage_cooldown_timer: float = 0.0
 
@@ -43,10 +48,10 @@ func _ready() -> void:
 	# On connecte le signal de l'Area2D pour détecter les contacts
 	$HitArea.body_entered.connect(_on_hit_area_body_entered)
 	
-	# On règle le NavigationAgent2D pour un meilleur suivi
-	$NavigationAgent2D.path_desired_distance = 15.0
-	$NavigationAgent2D.target_desired_distance = 15.0
-	$NavigationAgent2D.avoidance_enabled = true
+	# On configure et connecte le NavigationAgent2D
+	nav_agent.path_desired_distance = 15.0
+	nav_agent.target_desired_distance = 15.0
+	nav_agent.velocity_computed.connect(_on_velocity_computed)
 
 # =============================================================================
 # _physics_process(delta)
@@ -59,9 +64,6 @@ func _physics_process(delta: float) -> void:
 	else:
 		# Sinon, l'ennemi ne se déplace pas
 		velocity = Vector2.ZERO
-	
-	# On applique la vélocité et on gère les collisions
-	move_and_slide()
 	
 	# On diminue le coodown des dégâts
 	if damage_cooldown_timer > 0.0:
@@ -76,20 +78,29 @@ func _follow_player_with_pathfinding() -> void:
 		return
 	
 	# On met à jour la cible du NavigationAgent2D chaque frame pour suivre le joueur
-	$NavigationAgent2D.target_position = player.global_position
+	nav_agent.target_position = player.global_position
 	
 	# On récupère la prochaine position sur le chemin
-	if not $NavigationAgent2D.is_navigation_finished():
-		var next_position = $NavigationAgent2D.get_next_path_position()
+	if not nav_agent.is_navigation_finished():
+		var next_position = nav_agent.get_next_path_position()
 		
 		# Calcul de la direction vers ce point du chemin
 		var direction = (next_position - global_position).normalized()
 		
-		# On assigne la vélocité
+		# On assigne la vélocité et on laisse NavigationAgent2D gérer l'avoidance
 		velocity = direction * SPEED
+		nav_agent.set_velocity(velocity)
 	else:
 		# Si on a atteint la cible, on s'arrête
 		velocity = Vector2.ZERO
+
+# =============================================================================
+# _on_velocity_computed(safe_velocity)
+# Signal émis par NavigationAgent2D après calcul de l'avoidance
+# =============================================================================
+func _on_velocity_computed(safe_velocity: Vector2) -> void:
+	velocity = safe_velocity
+	move_and_slide()
 
 # =============================================================================
 # _on_hit_area_body_entered(body)

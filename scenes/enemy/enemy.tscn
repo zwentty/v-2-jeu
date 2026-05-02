@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://ce4ongkgfv5d8"]
+[gd_scene format=3 uid="uid://ce4ongkgfv5d8"]
 
-[ext_resource type="Script" path="res://scenes/enemy/enemy.gd" id="1"]
+[ext_resource type="Script" uid="uid://cug8l4w1g18pk" path="res://scenes/enemy/enemy.gd" id="1"]
 
 [sub_resource type="CircleShape2D" id="1"]
 radius = 14.0
@@ -8,19 +8,22 @@ radius = 14.0
 [sub_resource type="CircleShape2D" id="2"]
 radius = 16.0
 
-[node name="Enemy" type="CharacterBody2D"]
+[node name="Enemy" type="CharacterBody2D" unique_id=539699614]
 script = ExtResource("1")
 
-[node name="Visual" type="Polygon2D" parent="."]
+[node name="Visual" type="Polygon2D" parent="." unique_id=788480870]
 color = Color(0.9, 0.2, 0.2, 1)
 polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=619149809]
 shape = SubResource("1")
 
-[node name="HitArea" type="Area2D" parent="."]
+[node name="HitArea" type="Area2D" parent="." unique_id=522465434]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="HitArea"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitArea" unique_id=1594787813]
 shape = SubResource("2")
 
-[node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="." unique_id=1784412030]
+path_desired_distance = 15.0
+target_desired_distance = 15.0
+avoidance_enabled = true
