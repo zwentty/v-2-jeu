@@ -16,7 +16,7 @@ extends CharacterBody2D
 # -----------------------------------------------------------------------------
 
 # Vitesse de déplacement du joueur en pixels par seconde
-const SPEED = 150.0
+const SPEED = 450.0
 
 # Durée d'invincibilité après avoir reçu un coup (en secondes)
 const INVINCIBLE_DURATION = 1.0
@@ -69,16 +69,13 @@ func _physics_process(delta: float) -> void:
 # _handle_movement()
 # Lit les entrées clavier et déplace le joueur.
 # Séparé dans sa propre fonction pour garder _physics_process() lisible.
+# Utilise les touches ZQSD : Z=haut, Q=gauche, S=bas, D=droite
 # -----------------------------------------------------------------------------
 func _handle_movement() -> void:
-	# Input.get_axis("négatif", "positif") retourne :
-	#   -1.0 si "négatif" est pressé
-	#    0.0 si rien n'est pressé (ou les deux)
-	#   +1.0 si "positif" est pressé
-	# "ui_left"/"ui_right" = flèches gauche/droite (actions par défaut de Godot)
+	# On lit directement les touches ZQSD
 	var direction := Vector2(
-		Input.get_axis("ui_left", "ui_right"),   # axe horizontal
-		Input.get_axis("ui_up",   "ui_down")     # axe vertical
+		(-1.0 if Input.is_key_pressed(KEY_Q) else 0.0) + (1.0 if Input.is_key_pressed(KEY_D) else 0.0),  # axe horizontal
+		(-1.0 if Input.is_key_pressed(KEY_Z) else 0.0) + (1.0 if Input.is_key_pressed(KEY_S) else 0.0)   # axe vertical
 	)
 
 	# Si le joueur appuie sur une direction...
