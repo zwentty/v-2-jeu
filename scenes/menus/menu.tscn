@@ -1,0 +1,47 @@
+[gd_scene load_steps=2 format=3]
+
+; load_steps=2 : 1 ressource externe (le script) + 1 pour la scène elle-même.
+; format=3 : format Godot 4.
+
+[ext_resource type="Script" path="res://scenes/menus/menu.gd" id="1"]
+
+; --- Nœud racine ---
+; Control plein écran : il sert de conteneur pour toute l'interface du menu.
+[node name="Menu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+; --- CenterContainer ---
+; Cet nœud centre automatiquement son contenu au milieu de l'écran.
+; anchors_preset=15 + anchor_right/bottom=1.0 → il prend tout l'écran.
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+; --- VBoxContainer ---
+; Empile ses enfants verticalement (Vertical Box Container).
+; custom_minimum_size donne une largeur minimale aux boutons.
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+
+; --- Titre ---
+; Label qui affiche le nom du jeu.
+; horizontal_alignment=1 = centré.
+[node name="Titre" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "V2 Jeu"
+horizontal_alignment = 1
+
+; --- BoutonStart ---
+; Bouton "Démarrer". Son signal "pressed" est connecté dans menu.gd.
+[node name="BoutonStart" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "Démarrer"

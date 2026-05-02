@@ -153,7 +153,6 @@ func take_damage(amount: int) -> void:
 # Fonction PRIVÉE (préfixe "_") : ne devrait pas être appelée depuis l'extérieur.
 # -----------------------------------------------------------------------------
 func _die() -> void:
-	print("Game Over !")
-	# get_tree() donne accès à l'arbre de scène complet.
-	# reload_current_scene() recharge la scène depuis le début.
-	get_tree().reload_current_scene()
+	# On charge l'écran de défaite.
+	# change_scene_to_file() remplace toute la scène actuelle par game_over.tscn.
+	get_tree().change_scene_to_file("res://scenes/menus/game_over.tscn")
