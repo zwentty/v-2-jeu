@@ -69,6 +69,10 @@ func _ready() -> void:
 	# get_tree().get_first_node_in_group("player") pour trouver ce nœud.
 	add_to_group("player")
 	
+	# Initialiser la barre de vie
+	_update_health_bar()
+
+	
 	# Connecter le signal de l'Area2D pour détecter les ennemis touchés
 	$AttackArea.body_entered.connect(_on_attack_hit)
 
@@ -159,6 +163,9 @@ func take_damage(amount: int) -> void:
 	invincible_timer = INVINCIBLE_DURATION
 
 	print("Joueur PV : %d / %d" % [health, max_health])
+	
+	# Mettre à jour la barre de vie
+	_update_health_bar()
 
 	# Si les PV tombent à 0 ou moins → mort
 	if health <= 0:
@@ -172,6 +179,14 @@ func _die() -> void:
 	# On charge l'écran de défaite.
 	# change_scene_to_file() remplace toute la scène actuelle par game_over.tscn.
 	get_tree().change_scene_to_file("res://scenes/menus/game_over.tscn")
+
+# -----------------------------------------------------------------------------
+# _update_health_bar()
+# Met à jour la barre de vie en fonction des PV actuels du joueur
+# -----------------------------------------------------------------------------
+func _update_health_bar() -> void:
+	$HealthBar.max_value = max_health
+	$HealthBar.value = health
 
 # -----------------------------------------------------------------------------
 # _handle_attack(delta)
