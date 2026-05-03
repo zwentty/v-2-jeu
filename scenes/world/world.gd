@@ -1,11 +1,12 @@
 # =============================================================================
 # world.gd
 # Script attaché au nœud World (Node2D)
-# Crée la région de navigation au RUNTIME.
-# C'est plus fiable que de la définir dans le .tscn car Godot bake le
-# polygone immédiatement au moment de l'ajout dans l'arbre de scène.
+# Crée la région de navigation au RUNTIME et vérifie la victoire.
 # =============================================================================
 extends Node2D
+
+# Variable pour éviter de vérifier plusieurs fois la victoire
+var victory_triggered: bool = false
 
 func _ready() -> void:
 	# -------------------------------------------------------------------------
@@ -92,3 +93,21 @@ func _ready() -> void:
 	#    peuvent calculer des chemins.
 	# -------------------------------------------------------------------------
 	nav_region.navigation_polygon = nav_poly
+
+# =============================================================================
+# _process(delta)
+# Vérifie à chaque frame si tous les ennemis sont morts
+# =============================================================================
+func _process(delta: float) -> void:
+	# Si la victoire a déjà été déclenchée, ne rien faire
+	if victory_triggered:
+		return
+	
+	# Compter le nombre d'ennemis restants dans le groupe "enemy"
+	var enemies := get_tree().get_nodes_in_group("enemy")
+	
+	# Si aucun ennemi ne reste, déclarer la victoire
+	if enemies.is_empty():
+		victory_triggered = true
+		print("Victoire ! Tous les ennemis sont éliminés !")
+		get_tree().change_scene_to_file("res://scenes/menus/victory.tscn")

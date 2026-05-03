@@ -137,7 +137,7 @@ func take_damage(amount: int) -> void:
 # =============================================================================
 func _die() -> void:
 	print("Ennemi éliminé !")
-	get_tree().change_scene_to_file("res://scenes/menus/victory.tscn")
+	queue_free()
 
 # =============================================================================
 # _update_health_bar()
