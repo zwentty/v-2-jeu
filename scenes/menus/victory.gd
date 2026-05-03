@@ -1,14 +1,14 @@
 # =============================================================================
 # victory.gd
 # Script de l'écran de victoire.
-# Quand le joueur clique sur "Menu", on retourne au menu principal.
+# Quand le joueur clique sur "Rejouer", on recharge le monde pour recommencer.
 # =============================================================================
 extends Control
 
 func _ready() -> void:
-	# On connecte le signal "pressed" du bouton "Menu".
-	$CenterContainer/VBoxContainer/BoutonMenu.pressed.connect(_on_menu_pressed)
+	# On connecte le signal "pressed" du bouton "Rejouer".
+	$CenterContainer/VBoxContainer/BoutonRejouer.pressed.connect(_on_rejouer_pressed)
 
-func _on_menu_pressed() -> void:
-	# On charge le menu principal.
-	get_tree().change_scene_to_file("res://scenes/menus/menu.tscn")
+func _on_rejouer_pressed() -> void:
+	# On recharge world.tscn pour recommencer une nouvelle partie.
+	get_tree().change_scene_to_file("res://scenes/world/world.tscn")

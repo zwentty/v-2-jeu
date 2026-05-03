@@ -30,7 +30,7 @@ layout_mode = 2
 text = "Victoire !"
 horizontal_alignment = 1
 
-; --- Bouton Menu ---
-[node name="BoutonMenu" type="Button" parent="CenterContainer/VBoxContainer"]
+; --- Bouton Rejouer ---
+[node name="BoutonRejouer" type="Button" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "Menu"
+text = "Rejouer"
