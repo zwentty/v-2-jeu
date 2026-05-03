@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1"]
 [ext_resource type="PackedScene" uid="uid://ce4ongkgfv5d8" path="res://scenes/enemy/enemy.tscn" id="2"]
+[ext_resource type="Script" path="res://scenes/world/world.gd" id="3"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(2560, 32)
@@ -12,21 +13,15 @@ size = Vector2(32, 1440)
 [sub_resource type="RectangleShape2D" id="3"]
 size = Vector2(80, 80)
 
-[sub_resource type="NavigationPolygon" id="4"]
-vertices = PackedVector2Array(0, 0, 2560, 0, 2560, 1440, 0, 1440)
-polygons = [PackedInt32Array(0, 1, 2, 3)]
-outlines = [PackedVector2Array(0, 0, 2560, 0, 2560, 1440, 0, 1440)]
-
 [node name="World" type="Node2D" unique_id=437363428]
-
-[node name="Navigation" type="NavigationRegion2D" parent="."]
-navigation_polygon = SubResource("4")
+script = ExtResource("3")
 
 [node name="Ground" type="Polygon2D" parent="." unique_id=1921836401]
 color = Color(0.25, 0.5, 0.18, 1)
 polygon = PackedVector2Array(0, 0, 2560, 0, 2560, 1440, 0, 1440)
 
 [node name="WallTop" type="StaticBody2D" parent="." unique_id=563772479]
+collision_layer = 2
 position = Vector2(1280, 16)
 
 [node name="Visual" type="Polygon2D" parent="WallTop" unique_id=1737137028]
@@ -37,6 +32,7 @@ polygon = PackedVector2Array(-1280, -16, 1280, -16, 1280, 16, -1280, 16)
 shape = SubResource("1")
 
 [node name="WallBottom" type="StaticBody2D" parent="." unique_id=1551674641]
+collision_layer = 2
 position = Vector2(1280, 1424)
 
 [node name="Visual" type="Polygon2D" parent="WallBottom" unique_id=1743852536]
@@ -47,6 +43,7 @@ polygon = PackedVector2Array(-1280, -16, 1280, -16, 1280, 16, -1280, 16)
 shape = SubResource("1")
 
 [node name="WallLeft" type="StaticBody2D" parent="." unique_id=2133149777]
+collision_layer = 2
 position = Vector2(16, 720)
 
 [node name="Visual" type="Polygon2D" parent="WallLeft" unique_id=1504337056]
@@ -57,6 +54,7 @@ polygon = PackedVector2Array(-16, -720, 16, -720, 16, 720, -16, 720)
 shape = SubResource("2")
 
 [node name="WallRight" type="StaticBody2D" parent="." unique_id=8244876]
+collision_layer = 2
 position = Vector2(2544, 720)
 
 [node name="Visual" type="Polygon2D" parent="WallRight" unique_id=1871565917]
@@ -69,6 +67,7 @@ shape = SubResource("2")
 [node name="Obstacles" type="Node2D" parent="." unique_id=1883738519]
 
 [node name="Rock1" type="StaticBody2D" parent="Obstacles" unique_id=476317095]
+collision_layer = 2
 position = Vector2(400, 300)
 
 [node name="Visual" type="Polygon2D" parent="Obstacles/Rock1" unique_id=829054007]
@@ -78,10 +77,8 @@ polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/Rock1" unique_id=798369742]
 shape = SubResource("3")
 
-[node name="NavigationObstacle2D" type="NavigationObstacle2D" parent="Obstacles/Rock1"]
-shape = SubResource("3")
-
 [node name="Rock2" type="StaticBody2D" parent="Obstacles" unique_id=1931717508]
+collision_layer = 2
 position = Vector2(1000, 650)
 
 [node name="Visual" type="Polygon2D" parent="Obstacles/Rock2" unique_id=445396011]
@@ -91,10 +88,8 @@ polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/Rock2" unique_id=1111084726]
 shape = SubResource("3")
 
-[node name="NavigationObstacle2D" type="NavigationObstacle2D" parent="Obstacles/Rock2"]
-shape = SubResource("3")
-
 [node name="Rock3" type="StaticBody2D" parent="Obstacles" unique_id=823291374]
+collision_layer = 2
 position = Vector2(1800, 850)
 
 [node name="Visual" type="Polygon2D" parent="Obstacles/Rock3" unique_id=983478395]
@@ -104,10 +99,8 @@ polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/Rock3" unique_id=1841283413]
 shape = SubResource("3")
 
-[node name="NavigationObstacle2D" type="NavigationObstacle2D" parent="Obstacles/Rock3"]
-shape = SubResource("3")
-
 [node name="Rock4" type="StaticBody2D" parent="Obstacles" unique_id=184721311]
+collision_layer = 2
 position = Vector2(700, 1100)
 
 [node name="Visual" type="Polygon2D" parent="Obstacles/Rock4" unique_id=1288989716]
@@ -117,10 +110,8 @@ polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/Rock4" unique_id=1849238027]
 shape = SubResource("3")
 
-[node name="NavigationObstacle2D" type="NavigationObstacle2D" parent="Obstacles/Rock4"]
-shape = SubResource("3")
-
 [node name="Rock5" type="StaticBody2D" parent="Obstacles" unique_id=2140403724]
+collision_layer = 2
 position = Vector2(2100, 400)
 
 [node name="Visual" type="Polygon2D" parent="Obstacles/Rock5" unique_id=1910376329]
@@ -128,9 +119,6 @@ color = Color(0.5, 0.45, 0.38, 1)
 polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/Rock5" unique_id=1497254061]
-shape = SubResource("3")
-
-[node name="NavigationObstacle2D" type="NavigationObstacle2D" parent="Obstacles/Rock5"]
 shape = SubResource("3")
 
 [node name="Player" parent="." unique_id=954420893 instance=ExtResource("1")]
