@@ -17,6 +17,16 @@ script = ExtResource("1")
 color = Color(0.9, 0.2, 0.2, 1)
 polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
 
+; --- BARRE DE VIE ---
+; ProgressBar : affiche les PV de l'ennemi sous forme de barre
+[node name="HealthBar" type="ProgressBar" parent="."]
+offset_left = -30.0
+offset_top = -35.0
+offset_right = 30.0
+offset_bottom = -25.0
+value = 100.0
+show_percentage = false
+
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=619149809]
 shape = SubResource("1")
 

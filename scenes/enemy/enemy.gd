@@ -47,6 +47,9 @@ func _ready() -> void:
 	# Ajouter l'ennemi au groupe "enemy" pour que le joueur puisse le détecter
 	add_to_group("enemy")
 	
+	# Initialiser la barre de vie
+	_update_health_bar()
+	
 	# path_desired_distance : distance à laquelle un point intermédiaire
 	# du chemin est considéré comme "atteint" (en pixels).
 	nav_agent.path_desired_distance = 4.0
@@ -120,6 +123,9 @@ func take_damage(amount: int) -> void:
 	health -= amount
 	print("Ennemi PV : %d" % health)
 	
+	# Mettre à jour la barre de vie
+	_update_health_bar()
+	
 	# Si les PV tombent à 0 ou moins, l'ennemi meurt
 	if health <= 0:
 		_die()
@@ -127,7 +133,16 @@ func take_damage(amount: int) -> void:
 # =============================================================================
 # _die()
 # Appelée quand l'ennemi meurt
+# Charge l'écran de victoire
 # =============================================================================
 func _die() -> void:
 	print("Ennemi éliminé !")
-	queue_free()  # Supprime l'ennemi de la scène
+	get_tree().change_scene_to_file("res://scenes/menus/victory.tscn")
+
+# =============================================================================
+# _update_health_bar()
+# Met à jour la barre de vie en fonction des PV actuels de l'ennemi
+# =============================================================================
+func _update_health_bar() -> void:
+	$HealthBar.max_value = 3  # health max = 3 (constant)
+	$HealthBar.value = health

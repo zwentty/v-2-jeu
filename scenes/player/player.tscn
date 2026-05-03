@@ -58,6 +58,16 @@ script = ExtResource("1")
 color = Color(0.2, 0.5, 0.9, 1)
 polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
 
+; --- BARRE DE VIE ---
+; ProgressBar : affiche les PV du joueur sous forme de barre
+[node name="HealthBar" type="ProgressBar" parent="."]
+offset_left = -30.0
+offset_top = -35.0
+offset_right = 30.0
+offset_bottom = -25.0
+value = 100.0
+show_percentage = false
+
 ; --- COLLISION ---
 ; CollisionShape2D : nœud qui applique une forme de collision au CharacterBody2D.
 ; Sans ce nœud, le joueur passerait à travers tous les murs.
