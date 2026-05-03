@@ -93,6 +93,30 @@ func _ready() -> void:
 	#    peuvent calculer des chemins.
 	# -------------------------------------------------------------------------
 	nav_region.navigation_polygon = nav_poly
+	
+	# -------------------------------------------------------------------------
+	# 5. Connecter le bouton pause
+	# -------------------------------------------------------------------------
+	$UILayer/PauseButton.pressed.connect(_on_pause_pressed)
+
+# =============================================================================
+# _on_pause_pressed()
+# Appelée quand le joueur appuie sur le bouton Pause ou sur ESC
+# Charge la scène du menu pause
+# =============================================================================
+func _on_pause_pressed() -> void:
+	var pause_menu = load("res://scenes/menus/pause.tscn").instantiate()
+	$UILayer.add_child(pause_menu)
+
+# =============================================================================
+# _input(event)
+# Appelée pour chaque input (clavier, souris, etc.)
+# =============================================================================
+func _input(event: InputEvent) -> void:
+	# Si on appuie sur ESC et que le jeu n'est pas déjà en pause...
+	if event.is_action_pressed("ui_cancel") and not get_tree().paused:
+		_on_pause_pressed()
+		get_tree().root.set_input_as_handled()  # Empêcher la propagation
 
 # =============================================================================
 # _process(delta)
