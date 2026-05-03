@@ -21,6 +21,15 @@ const SPEED = 450.0
 # Durée d'invincibilité après avoir reçu un coup (en secondes)
 const INVINCIBLE_DURATION = 1.0
 
+# Distance de la hitbox d'attaque par rapport au joueur
+const ATTACK_DISTANCE = 50.0
+
+# Durée de l'attaque (temps où la hitbox reste active)
+const ATTACK_DURATION = 0.2
+
+# Dégâts infligés par l'attaque
+const ATTACK_DAMAGE = 1
+
 # -----------------------------------------------------------------------------
 # VARIABLES D'ÉTAT
 # Ces valeurs changent pendant le jeu (mot-clé "var").
@@ -43,6 +52,12 @@ var invincible_timer: float = 0.0
 # Vector2.DOWN = (0, 1) par défaut → le joueur regarde vers le bas au départ
 var facing_direction: Vector2 = Vector2.DOWN
 
+# Est-ce que le joueur est en train d'attaquer ?
+var is_attacking: bool = false
+
+# Timer de l'attaque
+var attack_timer: float = 0.0
+
 # -----------------------------------------------------------------------------
 # _ready()
 # Appelée UNE SEULE FOIS quand le nœud entre dans la scène.
@@ -53,6 +68,9 @@ func _ready() -> void:
 	# Les groupes sont des étiquettes : n'importe quel autre script peut faire
 	# get_tree().get_first_node_in_group("player") pour trouver ce nœud.
 	add_to_group("player")
+	
+	# Connecter le signal de l'Area2D pour détecter les ennemis touchés
+	$AttackArea.body_entered.connect(_on_attack_hit)
 
 # -----------------------------------------------------------------------------
 # _physics_process(delta)
@@ -64,6 +82,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_handle_movement()
 	_handle_invincibility(delta)
+	_handle_attack(delta)
 
 # -----------------------------------------------------------------------------
 # _handle_movement()
@@ -153,3 +172,44 @@ func _die() -> void:
 	# On charge l'écran de défaite.
 	# change_scene_to_file() remplace toute la scène actuelle par game_over.tscn.
 	get_tree().change_scene_to_file("res://scenes/menus/game_over.tscn")
+
+# -----------------------------------------------------------------------------
+# _handle_attack(delta)
+# Gère le système d'attaque : détection du clic, positionnement de la hitbox
+# vers la souris, et timer d'activation.
+# -----------------------------------------------------------------------------
+func _handle_attack(delta: float) -> void:
+	# Si on est en train d'attaquer, on décrémente le timer
+	if is_attacking:
+		attack_timer -= delta
+		if attack_timer <= 0.0:
+			# L'attaque est terminée, on désactive la hitbox
+			is_attacking = false
+			$AttackArea.monitoring = false
+			$AttackArea/AttackVisual.visible = false
+		return
+	
+	# Détection du clic gauche pour lancer une attaque
+	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not is_attacking:
+		# Calculer la direction vers la souris
+		var mouse_pos := get_global_mouse_position()
+		var direction := (mouse_pos - global_position).normalized()
+		
+		# Positionner la hitbox d'attaque (grande sphère jaune) dans cette direction
+		$AttackArea.position = direction * ATTACK_DISTANCE
+		
+		# Activer l'attaque
+		is_attacking = true
+		attack_timer = ATTACK_DURATION
+		$AttackArea.monitoring = true
+		$AttackArea/AttackVisual.visible = true
+
+# -----------------------------------------------------------------------------
+# _on_attack_hit(body)
+# Appelée quand la hitbox d'attaque touche un ennemi
+# -----------------------------------------------------------------------------
+func _on_attack_hit(body: Node2D) -> void:
+	# Vérifier que c'est bien un ennemi et qu'il a une méthode take_damage
+	if body.is_in_group("enemy") and body.has_method("take_damage"):
+		body.take_damage(ATTACK_DAMAGE)
+		print("Ennemi touché !")
