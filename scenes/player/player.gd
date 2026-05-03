@@ -27,6 +27,9 @@ const ATTACK_DISTANCE = 50.0
 # Durée de l'attaque (temps où la hitbox reste active)
 const ATTACK_DURATION = 0.2
 
+# Cooldown entre deux attaques (temps minimum entre deux clics)
+const ATTACK_COOLDOWN = 0.5
+
 # Dégâts infligés par l'attaque
 const ATTACK_DAMAGE = 1
 
@@ -55,8 +58,11 @@ var facing_direction: Vector2 = Vector2.DOWN
 # Est-ce que le joueur est en train d'attaquer ?
 var is_attacking: bool = false
 
-# Timer de l'attaque
+# Timer de l'attaque (durée d'activation de la hitbox)
 var attack_timer: float = 0.0
+
+# Timer du cooldown d'attaque (temps avant de pouvoir attaquer à nouveau)
+var attack_cooldown_timer: float = 0.0
 
 # -----------------------------------------------------------------------------
 # _ready()
@@ -194,6 +200,10 @@ func _update_health_bar() -> void:
 # vers la souris, et timer d'activation.
 # -----------------------------------------------------------------------------
 func _handle_attack(delta: float) -> void:
+	# Décrémenter le cooldown de l'attaque si nécessaire
+	if attack_cooldown_timer > 0.0:
+		attack_cooldown_timer -= delta
+	
 	# Si on est en train d'attaquer, on décrémente le timer
 	if is_attacking:
 		attack_timer -= delta
@@ -205,7 +215,8 @@ func _handle_attack(delta: float) -> void:
 		return
 	
 	# Détection du clic gauche pour lancer une attaque
-	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not is_attacking:
+	# On vérifie que le cooldown est écoulé avant de permettre une nouvelle attaque
+	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not is_attacking and attack_cooldown_timer <= 0.0:
 		# Calculer la direction vers la souris
 		var mouse_pos := get_global_mouse_position()
 		var direction := (mouse_pos - global_position).normalized()
@@ -218,6 +229,9 @@ func _handle_attack(delta: float) -> void:
 		attack_timer = ATTACK_DURATION
 		$AttackArea.monitoring = true
 		$AttackArea/AttackVisual.visible = true
+		
+		# Réinitialiser le cooldown de l'attaque
+		attack_cooldown_timer = ATTACK_COOLDOWN
 
 # -----------------------------------------------------------------------------
 # _on_attack_hit(body)
