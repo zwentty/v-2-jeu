@@ -151,10 +151,21 @@ func take_damage(amount: int) -> void:
 # =============================================================================
 # _die()
 # Appelée quand l'ennemi meurt
-# Charge l'écran de victoire
+# Drop un objet à sa position avant de disparaître
 # =============================================================================
 func _die() -> void:
 	print("Ennemi éliminé !")
+	
+	# Créer un objet à la position de l'ennemi
+	var item_scene: PackedScene = load("res://scenes/items/item.tscn")
+	var item: Node2D = item_scene.instantiate()
+	item.global_position = global_position
+	item.item_name = "Butin d'ennemi"
+	
+	# Ajouter l'objet à la scène (au même niveau que l'ennemi)
+	get_parent().add_child(item)
+	
+	# Supprimer l'ennemi
 	queue_free()
 
 # =============================================================================

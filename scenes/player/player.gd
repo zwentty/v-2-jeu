@@ -64,6 +64,9 @@ var attack_timer: float = 0.0
 # Timer du cooldown d'attaque (temps avant de pouvoir attaquer à nouveau)
 var attack_cooldown_timer: float = 0.0
 
+# Référence à l'inventaire
+var inventory: Control = null
+
 # -----------------------------------------------------------------------------
 # _ready()
 # Appelée UNE SEULE FOIS quand le nœud entre dans la scène.
@@ -81,6 +84,12 @@ func _ready() -> void:
 	
 	# Connecter le signal de l'Area2D pour détecter les ennemis touchés
 	$AttackArea.body_entered.connect(_on_attack_hit)
+	
+	# Créer l'inventaire et l'ajouter à la caméra (pour qu'il suive le joueur)
+	var inventory_scene: PackedScene = load("res://scenes/ui/inventory.tscn")
+	inventory = inventory_scene.instantiate()
+	inventory.process_mode = Node.PROCESS_MODE_ALWAYS  # L'inventaire fonctionne même en pause
+	$Camera2D.add_child(inventory)
 
 # -----------------------------------------------------------------------------
 # _physics_process(delta)
@@ -93,6 +102,36 @@ func _physics_process(delta: float) -> void:
 	_handle_movement()
 	_handle_invincibility(delta)
 	_handle_attack(delta)
+
+# -----------------------------------------------------------------------------
+# _unhandled_input(event)
+# Gère les entrées clavier ponctuelles (inventaire et ramassage)
+# -----------------------------------------------------------------------------
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		# Touche I : ouvrir/fermer l'inventaire
+		if event.keycode == KEY_I:
+			if inventory:
+				inventory.toggle_visibility()
+			get_viewport().set_input_as_handled()
+		
+		# Touche E : ramasser un objet
+		elif event.keycode == KEY_E:
+			# Chercher les objets à proximité
+			var items := get_tree().get_nodes_in_group("item")
+			
+			for item in items:
+				# Vérifier si l'objet a la méthode pickup (objet ramassable)
+				if item.has_method("pickup"):
+					# Vérifier la distance
+					var distance := global_position.distance_to(item.global_position)
+					if distance <= 50.0:  # Portée de ramassage : 50 pixels
+						# Ramasser l'objet
+						var item_name: String = item.pickup()
+						if inventory:
+							inventory.add_item(item_name)
+						get_viewport().set_input_as_handled()
+						break  # Ne ramasser qu'un objet à la fois
 
 # -----------------------------------------------------------------------------
 # _handle_movement()
