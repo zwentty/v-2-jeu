@@ -39,6 +39,12 @@ extends CharacterBody2D
 # Timer interne pour le cooldown de dégâts
 var _cooldown_timer: float = 0.0
 
+# Déterminer la salle d'appartenance (1 ou 2) et les limites de pathfinding
+# Salle 1: X < 2560, Salle 2: X >= 2560
+var room_number: int = 1
+var room_min_x: float = 0.0
+var room_max_x: float = 2560.0
+
 # =============================================================================
 # _ready()
 # Appelée une fois au démarrage, configure le NavigationAgent2D
@@ -46,6 +52,18 @@ var _cooldown_timer: float = 0.0
 func _ready() -> void:
 	# Ajouter l'ennemi au groupe "enemy" pour que le joueur puisse le détecter
 	add_to_group("enemy")
+	
+	# Déterminer la salle d'appartenance basée sur la position X
+	if global_position.x < 2560.0:
+		room_number = 1
+		room_min_x = 0.0
+		room_max_x = 2560.0
+	else:
+		room_number = 2
+		room_min_x = 2560.0
+		room_max_x = 5120.0
+	
+	print("Ennemi appartient à la salle %d (X: %.0f - %.0f)" % [room_number, room_min_x, room_max_x])
 	
 	# Initialiser la barre de vie
 	_update_health_bar()
@@ -81,6 +99,17 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var player := players[0] as CharacterBody2D
+	
+	# Vérifier que le joueur est dans la même salle que l'ennemi
+	# Sinon, arrêter le pathfinding
+	var player_in_same_room := (room_number == 1 and player.global_position.x < 2560.0) or \
+	                           (room_number == 2 and player.global_position.x >= 2560.0)
+	
+	if not player_in_same_room:
+		# Joueur dans une autre salle : arrêter le mouvement
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
 	
 	# Met à jour la cible du NavigationAgent à chaque frame
 	# pour suivre le joueur en temps réel

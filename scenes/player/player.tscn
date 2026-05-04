@@ -99,7 +99,7 @@ polygon = PackedVector2Array(30, 0, 29.4, 5.9, 27.7, 11.5, 25, 16.8, 21.2, 21.2,
 ; limit_right = 2560, limit_bottom = 1440 → taille totale de la carte
 ;   La caméra s'arrête aux bords de la carte et ne montre pas l'extérieur.
 [node name="Camera2D" type="Camera2D" parent="."]
-limit_left = 0
-limit_top = 0
-limit_right = 2560
-limit_bottom = 1440
+limit_left = -100
+limit_top = -100
+limit_right = 5000
+limit_bottom = 1540

@@ -8,6 +8,12 @@ extends Node2D
 # Variable pour éviter de vérifier plusieurs fois la victoire
 var victory_triggered: bool = false
 
+# Variable pour éviter de masquer la porte plusieurs fois
+var door_disappeared: bool = false
+
+# Tracker la salle actuelle du joueur (1 ou 2)
+var current_player_room: int = 1
+
 func _ready() -> void:
 	# -------------------------------------------------------------------------
 	# 1. Créer le nœud NavigationRegion2D et l'ajouter à la scène.
@@ -28,13 +34,21 @@ func _ready() -> void:
 	var nav_poly := NavigationPolygon.new()
 
 	# --- Contour extérieur : la zone navigable (à l'intérieur des murs) ---
-	# Murs = 32px d'épaisseur de chaque côté.
-	# Zone marchable = (32, 32) → (2528, 1408)
+	# Salle 1 avec ouverture pour la porte (Y: 670 à 770)
 	nav_poly.add_outline(PackedVector2Array([
 		Vector2(32, 32),
 		Vector2(2528, 32),
 		Vector2(2528, 1408),
 		Vector2(32, 1408),
+	]))
+
+	# --- Salle 2 avec ouverture pour la porte (Y: 670 à 770) ---
+	# Zone marchable = (2592, 32) → (5088, 1408)
+	nav_poly.add_outline(PackedVector2Array([
+		Vector2(2592, 32),
+		Vector2(5088, 32),
+		Vector2(5088, 1408),
+		Vector2(2592, 1408),
 	]))
 
 	# --- Trous : les 5 rochers (160x160 - doublé pour la navigation) ---
@@ -81,6 +95,48 @@ func _ready() -> void:
 		Vector2(2180, 320),
 	]))
 
+	# --- Obstacles Salle 2 ---
+
+	# Rock1_Room2 centré en (2960, 300)
+	nav_poly.add_outline(PackedVector2Array([
+		Vector2(2880, 220),
+		Vector2(2880, 380),
+		Vector2(3040, 380),
+		Vector2(3040, 220),
+	]))
+
+	# Rock2_Room2 centré en (3560, 650)
+	nav_poly.add_outline(PackedVector2Array([
+		Vector2(3480, 570),
+		Vector2(3480, 730),
+		Vector2(3640, 730),
+		Vector2(3640, 570),
+	]))
+
+	# Rock3_Room2 centré en (4360, 850)
+	nav_poly.add_outline(PackedVector2Array([
+		Vector2(4280, 770),
+		Vector2(4280, 930),
+		Vector2(4440, 930),
+		Vector2(4440, 770),
+	]))
+
+	# Rock4_Room2 centré en (3260, 1100)
+	nav_poly.add_outline(PackedVector2Array([
+		Vector2(3180, 1020),
+		Vector2(3180, 1180),
+		Vector2(3340, 1180),
+		Vector2(3340, 1020),
+	]))
+
+	# Rock5_Room2 centré en (4660, 400)
+	nav_poly.add_outline(PackedVector2Array([
+		Vector2(4580, 320),
+		Vector2(4580, 480),
+		Vector2(4740, 480),
+		Vector2(4740, 320),
+	]))
+
 	# -------------------------------------------------------------------------
 	# 3. make_polygons_from_outlines() transforme les outlines en triangles
 	#    navigables. C'est le "baking" du mesh de navigation.
@@ -93,11 +149,80 @@ func _ready() -> void:
 	#    peuvent calculer des chemins.
 	# -------------------------------------------------------------------------
 	nav_region.navigation_polygon = nav_poly
+	# -------------------------------------------------------------------------
+	# 2ème NavigationRegion2D pour la salle 2
+	# -------------------------------------------------------------------------
+	var nav_region_2 := NavigationRegion2D.new()
+	add_child(nav_region_2)
+	move_child(nav_region_2, 1)
+
+	# Créer le deuxième NavigationPolygon pour la salle 2
+	var nav_poly_2 := NavigationPolygon.new()
+
+	# --- Contour extérieur : salle 2 ---
+	nav_poly_2.add_outline(PackedVector2Array([
+		Vector2(2592, 32),
+		Vector2(5088, 32),
+		Vector2(5088, 1408),
+		Vector2(2592, 1408),
+	]))
+
+	# --- Obstacles Salle 2 ---
+
+	# Rock1_Room2 centré en (2960, 300)
+	nav_poly_2.add_outline(PackedVector2Array([
+		Vector2(2880, 220),
+		Vector2(2880, 380),
+		Vector2(3040, 380),
+		Vector2(3040, 220),
+	]))
+
+	# Rock2_Room2 centré en (3560, 650)
+	nav_poly_2.add_outline(PackedVector2Array([
+		Vector2(3480, 570),
+		Vector2(3480, 730),
+		Vector2(3640, 730),
+		Vector2(3640, 570),
+	]))
+
+	# Rock3_Room2 centré en (4360, 850)
+	nav_poly_2.add_outline(PackedVector2Array([
+		Vector2(4280, 770),
+		Vector2(4280, 930),
+		Vector2(4440, 930),
+		Vector2(4440, 770),
+	]))
+
+	# Rock4_Room2 centré en (3260, 1100)
+	nav_poly_2.add_outline(PackedVector2Array([
+		Vector2(3180, 1020),
+		Vector2(3180, 1180),
+		Vector2(3340, 1180),
+		Vector2(3340, 1020),
+	]))
+
+	# Rock5_Room2 centré en (4660, 400)
+	nav_poly_2.add_outline(PackedVector2Array([
+		Vector2(4580, 320),
+		Vector2(4580, 480),
+		Vector2(4740, 480),
+		Vector2(4740, 320),
+	]))
+
+	# Bake et assigner le polygone
+	nav_poly_2.make_polygons_from_outlines()
+	nav_region_2.navigation_polygon = nav_poly_2
 	
 	# -------------------------------------------------------------------------
 	# 5. Connecter le bouton pause
 	# -------------------------------------------------------------------------
 	$UILayer/PauseButton.pressed.connect(_on_pause_pressed)
+	
+	# -------------------------------------------------------------------------
+	# 6. Initialiser la visibilité des masques (salle 1 visible, salle 2 masquée)
+	# -------------------------------------------------------------------------
+	$MaskRoom2.visible = true
+	$MaskRoom1.visible = false
 
 # =============================================================================
 # _on_pause_pressed()
@@ -120,12 +245,61 @@ func _input(event: InputEvent) -> void:
 
 # =============================================================================
 # _process(delta)
-# Vérifie à chaque frame si tous les ennemis sont morts
+# Vérifie à chaque frame si tous les ennemis sont morts et gère la porte
 # =============================================================================
 func _process(delta: float) -> void:
 	# Si la victoire a déjà été déclenchée, ne rien faire
 	if victory_triggered:
 		return
+	
+	# -----
+	# Trouver le joueur et sa salle actuelle
+	# -----
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty():
+		return
+	
+	var player = players[0]
+	var new_player_room = 1 if player.global_position.x < 2560 else 2
+	
+	# -----
+	# Si le joueur a changé de salle, réafficher la porte et gérer les masques
+	# -----
+	if new_player_room != current_player_room:
+		current_player_room = new_player_room
+		door_disappeared = false
+		$Porte.visible = true
+		$Porte.collision_layer = 2  # Réactiver les collisions
+		
+		# Gérer la visibilité des masques selon la salle actuelle
+		if current_player_room == 1:
+			$MaskRoom2.visible = true
+			$MaskRoom1.visible = false
+		else:
+			$MaskRoom1.visible = true
+			$MaskRoom2.visible = false
+		
+		print("Joueur entre dans la salle %d. Porte réaffichée." % current_player_room)
+	
+	# -----
+	# Vérifier si tous les ennemis de la salle actuelle du joueur sont morts
+	# -----
+	if not door_disappeared:
+		var all_enemies := get_tree().get_nodes_in_group("enemy")
+		
+		# Filtrer les ennemis selon la salle actuelle du joueur
+		var enemies_current_room
+		if current_player_room == 1:
+			enemies_current_room = all_enemies.filter(func(enemy): return enemy.position.x < 2560)
+		else:
+			enemies_current_room = all_enemies.filter(func(enemy): return enemy.position.x >= 2560)
+		
+		# Si tous les ennemis de la salle actuelle sont morts, masquer la porte
+		if enemies_current_room.is_empty():
+			door_disappeared = true
+			$Porte.visible = false
+			$Porte.collision_layer = 0  # Désactiver les collisions
+			print("Porte disparue ! Tous les ennemis de la salle %d sont éliminés." % current_player_room)
 	
 	# Compter le nombre d'ennemis restants dans le groupe "enemy"
 	var enemies := get_tree().get_nodes_in_group("enemy")
