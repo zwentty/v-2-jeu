@@ -50,14 +50,19 @@ func _ready() -> void:
 	# Initialiser la barre de vie
 	_update_health_bar()
 	
-	# path_desired_distance : distance à laquelle un point intermédiaire
-	# du chemin est considéré comme "atteint" (en pixels).
+	# Configuration du NavigationAgent2D
 	nav_agent.path_desired_distance = 4.0
-	
-	# target_desired_distance : distance à laquelle la cible finale est
-	# considérée comme "atteinte". On met stop_distance ici pour que
-	# l'ennemi s'arrête naturellement à bonne distance du joueur.
 	nav_agent.target_desired_distance = stop_distance
+	
+	# Configuration de l'avoidance (pour éviter les autres ennemis)
+	nav_agent.radius = 30.0  # Taille de la "bulle personnelle" (distance maintenue)
+	nav_agent.neighbor_distance = 300.0  # Distance de détection des voisins
+	nav_agent.max_neighbors = 10  # Nombre max d'agents à éviter
+	nav_agent.max_speed = speed  # Vitesse max pour les calculs d'évitement
+	nav_agent.avoidance_enabled = true  # Activer l'évitement
+	
+	# Connecter le signal velocity_computed pour utiliser la vélocité corrigée
+	nav_agent.velocity_computed.connect(_on_velocity_computed)
 
 # =============================================================================
 # _physics_process(delta)
@@ -88,18 +93,31 @@ func _physics_process(delta: float) -> void:
 	# on arrête le déplacement
 	if nav_agent.is_navigation_finished():
 		velocity = Vector2.ZERO
+		move_and_slide()
 	else:
-		# Sinon, on avance vers le prochain point du chemin
+		# Sinon, on calcule la direction vers le prochain point du chemin
 		var next_pos := nav_agent.get_next_path_position()
 		var direction := (next_pos - global_position).normalized()
-		velocity = direction * speed
-
-	move_and_slide()
+		var desired_velocity := direction * speed
+		
+		# On envoie la vélocité désirée au NavigationAgent2D
+		# Il va calculer une vélocité corrigée pour éviter les autres agents
+		# et appeler _on_velocity_computed() avec le résultat
+		nav_agent.set_velocity(desired_velocity)
 
 	# Système de dégâts par distance : si l'ennemi est assez proche,
 	# il tente d'infliger des dégâts
 	if dist <= stop_distance:
 		_try_damage(player)
+
+# =============================================================================
+# _on_velocity_computed(safe_velocity)
+# Callback appelé par NavigationAgent2D avec la vélocité corrigée pour éviter
+# les autres agents. C'est ici qu'on applique le mouvement final.
+# =============================================================================
+func _on_velocity_computed(safe_velocity: Vector2) -> void:
+	velocity = safe_velocity
+	move_and_slide()
 
 # =============================================================================
 # _try_damage(player)
