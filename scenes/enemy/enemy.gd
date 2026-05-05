@@ -204,3 +204,4 @@ func _die() -> void:
 func _update_health_bar() -> void:
 	$HealthBar.max_value = 3  # health max = 3 (constant)
 	$HealthBar.value = health
+	# Optionnel : changer la couleur de la barre en fonction des PV
