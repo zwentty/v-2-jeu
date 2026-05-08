@@ -15,10 +15,19 @@ run/main_scene="res://scenes/menus/menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+Settings="*res://scripts/settings.gd"
+
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/mode=2
+window/size/resizable=true
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/stretch/scale=1.0
 
 [physics]
 

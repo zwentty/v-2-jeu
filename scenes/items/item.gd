@@ -18,8 +18,8 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	
-	# Afficher le nom de l'objet
-	$Label.text = "E"
+	# Afficher la touche de ramassage configurée
+	$Label.text = OS.get_keycode_string(Settings.key_pickup)
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player"):

@@ -84,12 +84,19 @@ func _ready() -> void:
 	
 	# Connecter le signal de l'Area2D pour détecter les ennemis touchés
 	$AttackArea.body_entered.connect(_on_attack_hit)
-	
-	# Créer l'inventaire et l'ajouter à la caméra (pour qu'il suive le joueur)
-	var inventory_scene: PackedScene = load("res://scenes/ui/inventory.tscn")
-	inventory = inventory_scene.instantiate()
-	inventory.process_mode = Node.PROCESS_MODE_ALWAYS  # L'inventaire fonctionne même en pause
-	$Camera2D.add_child(inventory)
+
+# -----------------------------------------------------------------------------
+# _get_inventory()
+# Récupère la référence à l'inventaire (lazy loading)
+# -----------------------------------------------------------------------------
+func _get_inventory() -> Control:
+	if not inventory:
+		inventory = get_tree().get_first_node_in_group("inventory")
+		if inventory:
+			print("Inventaire trouvé et connecté au joueur")
+		else:
+			print("ERREUR : Inventaire introuvable !")
+	return inventory
 
 # -----------------------------------------------------------------------------
 # _physics_process(delta)
@@ -105,18 +112,12 @@ func _physics_process(delta: float) -> void:
 
 # -----------------------------------------------------------------------------
 # _unhandled_input(event)
-# Gère les entrées clavier ponctuelles (inventaire et ramassage)
+# Gère les entrées clavier ponctuelles (ramassage)
 # -----------------------------------------------------------------------------
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		# Touche I : ouvrir/fermer l'inventaire
-		if event.keycode == KEY_I:
-			if inventory:
-				inventory.toggle_visibility()
-			get_viewport().set_input_as_handled()
-		
-		# Touche E : ramasser un objet
-		elif event.keycode == KEY_E:
+		# Touche de ramassage (configurable)
+		if event.keycode == Settings.key_pickup:
 			# Chercher les objets à proximité
 			var items := get_tree().get_nodes_in_group("item")
 			
@@ -128,8 +129,9 @@ func _unhandled_input(event: InputEvent) -> void:
 					if distance <= 50.0:  # Portée de ramassage : 50 pixels
 						# Ramasser l'objet
 						var item_name: String = item.pickup()
-						if inventory:
-							inventory.add_item(item_name)
+						var inv := _get_inventory()
+						if inv:
+							inv.add_item(item_name)
 						get_viewport().set_input_as_handled()
 						break  # Ne ramasser qu'un objet à la fois
 
@@ -140,10 +142,10 @@ func _unhandled_input(event: InputEvent) -> void:
 # Utilise les touches ZQSD : Z=haut, Q=gauche, S=bas, D=droite
 # -----------------------------------------------------------------------------
 func _handle_movement() -> void:
-	# On lit directement les touches ZQSD
+	# On lit les touches depuis Settings
 	var direction := Vector2(
-		(-1.0 if Input.is_key_pressed(KEY_Q) else 0.0) + (1.0 if Input.is_key_pressed(KEY_D) else 0.0),  # axe horizontal
-		(-1.0 if Input.is_key_pressed(KEY_Z) else 0.0) + (1.0 if Input.is_key_pressed(KEY_S) else 0.0)   # axe vertical
+		(-1.0 if Input.is_key_pressed(Settings.key_move_left) else 0.0) + (1.0 if Input.is_key_pressed(Settings.key_move_right) else 0.0),  # axe horizontal
+		(-1.0 if Input.is_key_pressed(Settings.key_move_up) else 0.0) + (1.0 if Input.is_key_pressed(Settings.key_move_down) else 0.0)   # axe vertical
 	)
 
 	# Si le joueur appuie sur une direction...

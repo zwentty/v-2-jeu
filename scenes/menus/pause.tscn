@@ -27,18 +27,32 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-; --- VBoxContainer : empile Pause + Bouton verticalement ---
+; --- VBoxContainer : empile Pause + Boutons verticalement ---
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
 custom_minimum_size = Vector2(220, 0)
+theme_override_constants/separation = 10
 
 ; --- Label Pause ---
 [node name="Pause" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "PAUSE"
+theme_override_font_sizes/font_size = 32
+text = "⏸ PAUSE"
 horizontal_alignment = 1
+
+; --- Spacer ---
+[node name="Spacer" type="Control" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
 
 ; --- Bouton Reprendre ---
 [node name="BoutonReprendre" type="Button" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "Reprendre"
+theme_override_font_sizes/font_size = 18
+text = "▶ Reprendre"
+
+; --- Bouton Paramètres ---
+[node name="BoutonParametres" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "⚙ Paramètres"

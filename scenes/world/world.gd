@@ -15,6 +15,16 @@ var door_disappeared: bool = false
 var current_player_room: int = 1
 
 func _ready() -> void:
+	# Créer l'inventaire et l'ajouter comme CanvasLayer (interface fixe)
+	var inventory_canvas := CanvasLayer.new()
+	add_child(inventory_canvas)
+	
+	var inventory_scene: PackedScene = load("res://scenes/ui/inventory.tscn")
+	var inventory := inventory_scene.instantiate()
+	inventory.process_mode = Node.PROCESS_MODE_ALWAYS
+	inventory.add_to_group("inventory")
+	inventory_canvas.add_child(inventory)
+	
 	# -------------------------------------------------------------------------
 	# 1. Créer le nœud NavigationRegion2D et l'ajouter à la scène.
 	#    Ce nœud publie un NavigationPolygon au NavigationServer2D.
@@ -230,24 +240,26 @@ func _ready() -> void:
 # Charge la scène du menu pause
 # =============================================================================
 func _on_pause_pressed() -> void:
-	var pause_menu = load("res://scenes/menus/pause.tscn").instantiate()
-	$UILayer.add_child(pause_menu)
+	var pause_scene: PackedScene = load("res://scenes/menus/pause.tscn")
+	var pause: Control = pause_scene.instantiate()
+	$UILayer.add_child(pause)
 
 # =============================================================================
 # _input(event)
-# Appelée pour chaque input (clavier, souris, etc.)
+# Gère les entrées clavier (touche Echap pour ouvrir le menu pause)
 # =============================================================================
 func _input(event: InputEvent) -> void:
-	# Si on appuie sur ESC et que le jeu n'est pas déjà en pause...
-	if event.is_action_pressed("ui_cancel") and not get_tree().paused:
-		_on_pause_pressed()
-		get_tree().root.set_input_as_handled()  # Empêcher la propagation
+	# Détecter la touche Echap pour ouvrir le menu pause (si le jeu n'est pas déjà en pause)
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		if not get_tree().paused:
+			_on_pause_pressed()
+			get_viewport().set_input_as_handled()
 
 # =============================================================================
 # _process(delta)
 # Vérifie à chaque frame si tous les ennemis sont morts et gère la porte
 # =============================================================================
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	# Si la victoire a déjà été déclenchée, ne rien faire
 	if victory_triggered:
 		return
