@@ -284,6 +284,36 @@ position = Vector2(4600, 400)
 [node name="Enemy9" parent="." unique_id=318870962 instance=ExtResource("2")]
 position = Vector2(4200, 1100)
 
+[node name="Enemy10" parent="." instance=ExtResource("2")]
+position = Vector2(800, 800)
+
+[node name="Enemy11" parent="." instance=ExtResource("2")]
+position = Vector2(1400, 400)
+
+[node name="Enemy12" parent="." instance=ExtResource("2")]
+position = Vector2(1800, 1100)
+
+[node name="Enemy13" parent="." instance=ExtResource("2")]
+position = Vector2(600, 300)
+
+[node name="Enemy14" parent="." instance=ExtResource("2")]
+position = Vector2(2300, 700)
+
+[node name="Enemy15" parent="." instance=ExtResource("2")]
+position = Vector2(1200, 1000)
+
+[node name="Enemy16" parent="." instance=ExtResource("2")]
+position = Vector2(3500, 400)
+
+[node name="Enemy17" parent="." instance=ExtResource("2")]
+position = Vector2(4000, 600)
+
+[node name="Enemy18" parent="." instance=ExtResource("2")]
+position = Vector2(4400, 900)
+
+[node name="Enemy19" parent="." instance=ExtResource("2")]
+position = Vector2(3100, 1200)
+
 [node name="MaskRoom1" type="Polygon2D" parent="." unique_id=1921836404]
 visible = false
 color = Color(0.5, 0.5, 0.5, 1)

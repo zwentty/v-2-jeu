@@ -1,24 +1,82 @@
+; =============================================================================
+; enemy.tscn
+; Scène de l'ennemi avec toutes les zones de détection et d'attaque
+;
+; STRUCTURE DE LA SCÈNE :
+; Enemy (CharacterBody2D) - Nœud racine, gère les collisions physiques
+; ├─ Visual (Polygon2D) - Carré rouge 32×32 qui représente l'ennemi visuellement
+; ├─ HealthBar (ProgressBar) - Barre de vie au-dessus de l'ennemi
+; ├─ CollisionShape2D - Forme de collision principale (cercle rayon 14px)
+; ├─ DetectionArea (Area2D) - Grande zone pour détecter le joueur au loin
+; │  └─ CollisionShape2D - Cercle rayon 400px
+; ├─ AttackArea (Area2D) - Zone moyenne pour déclencher l'attaque
+; │  └─ CollisionShape2D - Cercle rayon 50px
+; ├─ AttackHitbox (Area2D) - Zone de dégâts qui se déplace devant l'ennemi
+; │  ├─ Visual (Polygon2D) - Carré jaune semi-transparent 40×40
+; │  └─ CollisionShape2D - Cercle rayon 25px (désactivée par défaut)
+; └─ NavigationAgent2D - Gère le pathfinding et l'évitement
+; =============================================================================
+
 [gd_scene format=3 uid="uid://ce4ongkgfv5d8"]
 
 [ext_resource type="Script" uid="uid://cug8l4w1g18pk" path="res://scenes/enemy/enemy.gd" id="1"]
 
+; =============================================================================
+; RESSOURCES (Formes de collision définies en avance)
+; =============================================================================
+
+; Forme de collision principale de l'ennemi (cercle rayon 14 pixels)
 [sub_resource type="CircleShape2D" id="1"]
 radius = 14.0
 
+; Forme de la zone de détection du joueur (cercle rayon 400 pixels)
+; Grande portée pour détecter le joueur de loin et déclencher la poursuite
 [sub_resource type="CircleShape2D" id="2"]
-radius = 16.0
+radius = 800.0
 
+; Forme de la zone d'attaque (cercle rayon 50 pixels)
+; Portée moyenne : quand le joueur entre ici, l'ennemi commence son attaque
+[sub_resource type="CircleShape2D" id="3"]
+radius = 50.0
+
+; Forme de la hitbox d'attaque (cercle rayon 25 pixels)
+; Zone réduite pour les dégâts réels de l'attaque
+[sub_resource type="CircleShape2D" id="4"]
+radius = 25.0
+
+; =============================================================================
+; NŒUD RACINE : Enemy (CharacterBody2D)
+; Type CharacterBody2D : permet les déplacements avec move_and_slide()
+;                        et les collisions physiques avec l'environnement
+; 
+; collision_layer = 4 : L'ennemi EXISTE sur la couche 4
+;                       (Les autres objets peuvent le détecter sur cette couche)
+; 
+; collision_mask = 6 : L'ennemi DÉTECTE les couches 2 et 4
+;                      Couche 2 = Murs/obstacles (pour ne pas les traverser)
+;                      Couche 4 = Autres ennemis (pour la collision physique entre eux)
+; =============================================================================
 [node name="Enemy" type="CharacterBody2D" unique_id=539699614]
 collision_layer = 4
 collision_mask = 6
 script = ExtResource("1")
 
+; =============================================================================
+; VISUEL DE L'ENNEMI
+; Polygon2D : carré rouge de 32×32 pixels (-16 à +16 en X et Y)
+; color = Rouge vif (R:0.9, G:0.2, B:0.2, Alpha:1.0)
+; =============================================================================
 [node name="Visual" type="Polygon2D" parent="." unique_id=788480870]
 color = Color(0.9, 0.2, 0.2, 1)
 polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
 
-; --- BARRE DE VIE ---
-; ProgressBar : affiche les PV de l'ennemi sous forme de barre
+; =============================================================================
+; BARRE DE VIE
+; ProgressBar : affiche les points de vie de l'ennemi
+; Position : au-dessus de l'ennemi (Y -35 à -25)
+; Taille : 60 pixels de large
+; show_percentage = false : n'affiche pas le pourcentage sous forme de texte
+; =============================================================================
 [node name="HealthBar" type="ProgressBar" parent="."]
 offset_left = -30.0
 offset_top = -35.0
@@ -27,14 +85,130 @@ offset_bottom = -25.0
 value = 100.0
 show_percentage = false
 
+; =============================================================================
+; COLLISION PRINCIPALE DE L'ENNEMI
+; CollisionShape2D avec un CircleShape2D (rayon 14 pixels)
+; Cette collision est utilisée pour :
+; - Les collisions physiques avec les murs (couche 2)
+; - Les collisions physiques avec les autres ennemis (couche 4)
+; =============================================================================
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=619149809]
 shape = SubResource("1")
 
-[node name="HitArea" type="Area2D" parent="." unique_id=522465434]
+; =============================================================================
+; ZONE DE DÉTECTION DU JOUEUR (DetectionArea)
+; Type : Area2D - détecte les corps qui entrent/sortent sans collisions physiques
+; 
+; FONCTIONNEMENT :
+; - Rayon de 400 pixels (très grande portée)
+; - Quand le joueur entre dans cette zone : signal body_entered émis
+;   → enemy.gd reçoit _on_player_detected() et passe en état CHASE
+; - Quand le joueur sort : signal body_exited émis
+;   → enemy.gd reçoit _on_player_lost() (actuellement vide)
+;
+; collision_layer = 0 : Cette area N'EXISTE sur aucune couche
+;                       (Elle ne peut pas être détectée par d'autres)
+; collision_mask = 1 : Cette area DÉTECTE la couche 1 (le joueur)
+;                      Elle ignore tout le reste (murs, ennemis, items)
+; =============================================================================
+[node name="DetectionArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 1
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="HitArea" unique_id=1594787813]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectionArea"]
 shape = SubResource("2")
 
+; =============================================================================
+; ZONE D'ATTAQUE (AttackArea)
+; Type : Area2D - déclenche l'attaque quand le joueur est proche
+; 
+; FONCTIONNEMENT :
+; - Rayon de 50 pixels (portée moyenne)
+; - Quand le joueur entre dans cette zone : signal body_entered émis
+;   → enemy.gd reçoit _on_attack_range_entered() et passe en état ATTACK
+; - Quand le joueur sort : signal body_exited émis
+;   → enemy.gd reçoit _on_attack_range_exited() et retourne en CHASE
+;     (sauf si l'attaque est déjà en cours)
+;
+; collision_layer = 0 : Cette area N'EXISTE sur aucune couche
+; collision_mask = 1 : Cette area DÉTECTE uniquement le joueur (couche 1)
+; =============================================================================
+[node name="AttackArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackArea"]
+shape = SubResource("3")
+
+; =============================================================================
+; HITBOX D'ATTAQUE (AttackHitbox)
+; Type : Area2D - zone de dégâts qui se déplace devant l'ennemi
+; 
+; FONCTIONNEMENT :
+; - Rayon de 25 pixels (petite zone)
+; - Position : Se déplace à facing_direction * 40 pixels devant l'ennemi
+; - Par défaut : DÉSACTIVÉE et INVISIBLE
+; - Pendant l'attaque :
+;   1. enemy.gd appelle _trigger_attack()
+;   2. La hitbox se positionne devant l'ennemi
+;   3. La collision est activée (disabled = false)
+;   4. Le visuel jaune devient visible
+;   5. Après 0.25 secondes, la hitbox se désactive automatiquement
+; - Si la hitbox touche le joueur : signal body_entered émis
+;   → enemy.gd reçoit _on_hitbox_hit() et inflige des dégâts
+;
+; collision_layer = 0 : Cette area N'EXISTE sur aucune couche
+; collision_mask = 1 : Cette area DÉTECTE uniquement le joueur (couche 1)
+;
+; VISUEL : Carré jaune semi-transparent (40×40 pixels)
+; - color = Jaune avec transparence (R:1.0, G:1.0, B:0.0, Alpha:0.3)
+; - Montre au joueur où l'attaque va frapper
+; =============================================================================
+[node name="AttackHitbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 1
+
+[node name="Visual" type="Polygon2D" parent="AttackHitbox"]
+color = Color(1, 1, 0, 0.3)
+polygon = PackedVector2Array(-20, -20, 20, -20, 20, 20, -20, 20)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackHitbox"]
+shape = SubResource("4")
+disabled = true
+
+; =============================================================================
+; AGENT DE NAVIGATION (NavigationAgent2D)
+; Gère le pathfinding (trouver un chemin vers la cible) et l'évitement
+; 
+; PARAMÈTRES DE BASE :
+; - path_desired_distance = 8.0 : Distance minimale au chemin pour être considéré "sur le chemin"
+; - target_desired_distance = 8.0 : Distance à la cible pour être considéré "arrivé"
+;
+; SYSTÈME D'ÉVITEMENT (Avoidance) :
+; Permet aux ennemis de ne pas se superposer en calculant des trajectoires sûres
+; 
+; - avoidance_enabled = true : Active l'évitement
+; - radius = 30.0 : Rayon de la "bulle personnelle" de l'ennemi
+;                   Les autres agents essaient de rester à au moins 30px
+; - neighbor_distance = 300.0 : Distance de détection des voisins
+;                               L'agent détecte les autres agents dans un rayon de 300px
+; - max_neighbors = 10 : Nombre maximum d'agents à considérer pour l'évitement
+; - time_horizon_agents = 1.0 : Temps de prévision pour l'évitement (1 seconde)
+; - max_speed = 200.0 : Vitesse maximale pour les calculs (correspond à move_speed)
+;
+; COUCHES D'ÉVITEMENT :
+; - avoidance_layers = 1 : Cet agent EXISTE sur la couche d'évitement 1
+; - avoidance_mask = 1 : Cet agent ÉVITE les agents de la couche 1
+;                        → Les ennemis s'évitent entre eux
+;
+; UTILISATION DANS LE CODE :
+; 1. enemy.gd définit nav_agent.target_position = position_cible
+; 2. enemy.gd appelle nav_agent.set_velocity(direction * speed)
+; 3. Le NavigationAgent calcule une vélocité sûre (évite obstacles + autres ennemis)
+; 4. Le signal velocity_computed est émis
+; 5. enemy.gd reçoit _on_velocity_computed(safe_velocity)
+; 6. enemy.gd applique cette vélocité : velocity = safe_velocity, move_and_slide()
+; =============================================================================
 [node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
 path_desired_distance = 8.0
 target_desired_distance = 8.0
