@@ -1,36 +1,40 @@
 extends Node
 
-enum Role { PRESSURE, FLANK }
-enum Side { LEFT, RIGHT }
+enum Role { INTERCEPT, FLANK_LEFT, FLANK_RIGHT, CHASE }
 
 const MAX_ATTACKERS := 2
-const CLOSE_DISTANCE := 100.0
+const UPDATE_RATE := 0.5
+const PREDICT_TIME := 0.8
+const INTERCEPT_DISTANCE := 330.0
+const FLANK_DISTANCE := 270.0
+const CHASE_DISTANCE := 230.0
+const ENCIRCLE_ZONE_RATIO := 0.75
+const RUSH_DURATION := 2.0
 
 var _enemies: Array[Node] = []
 var _roles: Dictionary = {}
-var _sides: Dictionary = {}
-var _flank_ratios: Dictionary = {}
+var _target_positions: Dictionary = {}
 var _player: Node2D = null
+var _timer: float = 0.0
+var _rush_mode: bool = false
+var _rush_cooldown: float = 0.0
 
 func register(enemy: Node) -> void:
 	if enemy in _enemies:
 		return
 	_enemies.append(enemy)
+	enemy.set_meta("assigned", false)
 
 func unregister(enemy: Node) -> void:
 	_enemies.erase(enemy)
 	_roles.erase(enemy.get_instance_id())
-	_sides.erase(enemy.get_instance_id())
-	_flank_ratios.erase(enemy.get_instance_id())
+	_target_positions.erase(enemy.get_instance_id())
 
 func get_role(enemy: Node) -> Role:
-	return _roles.get(enemy.get_instance_id(), Role.PRESSURE)
+	return _roles.get(enemy.get_instance_id(), Role.CHASE)
 
-func get_side(enemy: Node) -> Side:
-	return _sides.get(enemy.get_instance_id(), Side.LEFT)
-
-func get_flank_ratio(enemy: Node) -> float:
-	return _flank_ratios.get(enemy.get_instance_id(), 0.6)
+func get_target_position(enemy: Node) -> Vector2:
+	return _target_positions.get(enemy.get_instance_id(), _player.global_position if _player else Vector2.ZERO)
 
 func can_attack(_enemy: Node) -> bool:
 	var count := 0
@@ -39,12 +43,20 @@ func can_attack(_enemy: Node) -> bool:
 			count += 1
 	return count < MAX_ATTACKERS
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	_find_player()
 	if _player == null:
 		return
 	_cleanup()
-	_reassign_roles()
+	
+	# Décrémenter le cooldown du mode rush
+	if _rush_cooldown > 0.0:
+		_rush_cooldown -= delta
+	
+	_timer += delta
+	if _timer >= UPDATE_RATE:
+		_timer = 0.0
+		_reassign_roles()
 
 func _find_player() -> void:
 	if _player != null and is_instance_valid(_player):
@@ -59,75 +71,116 @@ func _reassign_roles() -> void:
 	if _enemies.size() == 0 or _player == null:
 		return
 	
-	var sorted = _enemies.duplicate()
-	sorted.sort_custom(func(a, b):
-		return a.global_position.distance_squared_to(_player.global_position) < b.global_position.distance_squared_to(_player.global_position)
-	)
+	# Prédiction de la position future du joueur
+	var player_velocity = _player.velocity
+	var player_dir = Vector2.RIGHT
 	
-	_roles.clear()
-	_sides.clear()
-	_flank_ratios.clear()
+	if player_velocity.length() > 10:
+		player_dir = player_velocity.normalized()
 	
-	# Séparer les ennemis en deux catégories
-	var pressures: Array[Node] = []
-	var flankers: Array[Node] = []
+	var future_pos = _player.global_position + player_velocity * PREDICT_TIME
 	
-	for enemy in sorted:
-		var dist = enemy.global_position.distance_to(_player.global_position)
-		# Si < 200px ou le plus proche, devient PRESSURE
-		if dist < CLOSE_DISTANCE or pressures.size() == 0:
-			pressures.append(enemy)
-			_roles[enemy.get_instance_id()] = Role.PRESSURE
-		else:
-			flankers.append(enemy)
-			_roles[enemy.get_instance_id()] = Role.FLANK
+	# Vérifier si le joueur est encerclé
+	var is_encircled = _is_player_encircled()
 	
-	# Le premier pressure sert de référence pour les calculs
-	var reference_enemy = pressures[0] if pressures.size() > 0 else null
+	# Activer le mode rush si encerclé
+	if is_encircled:
+		_rush_mode = true
+		_rush_cooldown = RUSH_DURATION
 	
-	# Collecter les flankers avec leurs distances perpendiculaires
-	var flankers_with_dist: Array[Dictionary] = []
+	# Désactiver le mode rush si le cooldown est écoulé
+	if _rush_cooldown <= 0.0:
+		_rush_mode = false
 	
-	for enemy in flankers:
-		if reference_enemy and _player:
-			var line_dir = reference_enemy.global_position.direction_to(_player.global_position)
-			var to_enemy = reference_enemy.global_position.direction_to(enemy.global_position)
-			# Produit vectoriel pour savoir si à gauche ou droite
-			var cross = line_dir.x * to_enemy.y - line_dir.y * to_enemy.x
-			_sides[enemy.get_instance_id()] = Side.RIGHT if cross > 0 else Side.LEFT
-			# Distance perpendiculaire à la ligne
-			var perp_dist = abs(cross) * reference_enemy.global_position.distance_to(enemy.global_position)
-			flankers_with_dist.append({"enemy": enemy, "dist": perp_dist})
-		else:
-			_sides[enemy.get_instance_id()] = Side.LEFT
-			flankers_with_dist.append({"enemy": enemy, "dist": 0.0})
+	# Mode rush : tous les ennemis foncent sur le joueur
+	if _rush_mode:
+		for enemy in _enemies:
+			_roles[enemy.get_instance_id()] = Role.INTERCEPT
+			_target_positions[enemy.get_instance_id()] = future_pos
+			enemy.set_meta("assigned", true)
+		print("RUSH MODE ACTIVE - Cooldown: ", "%.1f" % _rush_cooldown, "s")
+		return
 	
-	# Séparer les flankers par côté
-	if flankers_with_dist.size() > 0:
-		var left_flankers: Array[Dictionary] = []
-		var right_flankers: Array[Dictionary] = []
+	# Positions cibles pour chaque rôle
+	var role_positions = {
+		Role.INTERCEPT: future_pos + player_dir * INTERCEPT_DISTANCE,
+		Role.FLANK_LEFT: future_pos + player_dir.rotated(-PI / 2.0) * FLANK_DISTANCE,
+		Role.FLANK_RIGHT: future_pos + player_dir.rotated(PI / 2.0) * FLANK_DISTANCE,
+	}
+	
+	# Reset des assignations
+	for enemy in _enemies:
+		enemy.set_meta("assigned", false)
+	
+	# Assigner les rôles prioritaires
+	_assign_best_enemy(Role.INTERCEPT, role_positions[Role.INTERCEPT])
+	_assign_best_enemy(Role.FLANK_LEFT, role_positions[Role.FLANK_LEFT])
+	_assign_best_enemy(Role.FLANK_RIGHT, role_positions[Role.FLANK_RIGHT])
+	
+	# Le reste = CHASE (derrière le joueur)
+	for enemy in _enemies:
+		if enemy.get_meta("assigned"):
+			continue
 		
-		for item in flankers_with_dist:
-			var side = _sides[item["enemy"].get_instance_id()]
-			if side == Side.LEFT:
-				left_flankers.append(item)
-			else:
-				right_flankers.append(item)
+		_roles[enemy.get_instance_id()] = Role.CHASE
+		_target_positions[enemy.get_instance_id()] = future_pos - player_dir * CHASE_DISTANCE
+		enemy.set_meta("assigned", true)
+
+func _is_player_encircled() -> bool:
+	if _enemies.size() < 3 or _player == null:
+		return false
+	
+	# Vérifier la couverture angulaire autour du joueur
+	var angles: Array[float] = []
+	
+	for enemy in _enemies:
+		var dir = _player.global_position.direction_to(enemy.global_position)
+		var angle = dir.angle()
+		angles.append(angle)
+	
+	if angles.size() < 3:
+		return false
+	
+	angles.sort()
+	
+	# Calculer le plus grand écart entre les angles
+	var max_gap = 0.0
+	for i in angles.size():
+		var next_i = (i + 1) % angles.size()
+		var gap = angles[next_i] - angles[i]
+		if next_i == 0:  # Dernier vers premier (boucle autour de TAU)
+			gap += TAU
+		max_gap = max(max_gap, gap)
+	
+	# Écart maximum acceptable dépend du nombre d'ennemis
+	# Plus il y a d'ennemis, plus on tolère un grand écart
+	# 3 ennemis: 140° | 4 ennemis: 160° | 5+ ennemis: 180°
+	var max_acceptable_gap = lerp(PI * 0.78, PI, min((_enemies.size() - 3) / 2.0, 1.0))
+	
+	print("Enemies: ", _enemies.size(), " | Max gap: ", rad_to_deg(max_gap), "° | Acceptable: ", rad_to_deg(max_acceptable_gap), "° | Encircled: ", max_gap < max_acceptable_gap)
+	return max_gap < max_acceptable_gap
+
+func _assign_best_enemy(role: Role, target_pos: Vector2) -> void:
+	var best_enemy = null
+	var best_score = INF
+	
+	for enemy in _enemies:
+		if enemy.get_meta("assigned"):
+			continue
 		
-		# Trier chaque côté par distance perpendiculaire
-		left_flankers.sort_custom(func(a, b): return a["dist"] < b["dist"])
-		right_flankers.sort_custom(func(a, b): return a["dist"] < b["dist"])
+		var dist = enemy.global_position.distance_to(target_pos)
 		
-		# Attribuer les ratios pour LEFT : le plus loin contourne le plus
-		for i in left_flankers.size():
-			var t = float(i) / max(1, left_flankers.size() - 1)
-			var ratio = lerp(0.85, 0.2, t)  # Plus l'index est élevé, plus le ratio est faible
-			_flank_ratios[left_flankers[i]["enemy"].get_instance_id()] = ratio
-			print("LEFT Flanker ", i, "/", left_flankers.size(), " - Dist: ", int(left_flankers[i]["dist"]), " - Ratio: ", "%.2f" % ratio)
+		# Bonus si garde son rôle actuel (stabilité)
+		if _roles.get(enemy.get_instance_id(), -1) == role:
+			dist -= 50.0
 		
-		# Attribuer les ratios pour RIGHT : le plus loin contourne le plus
-		for i in right_flankers.size():
-			var t = float(i) / max(1, right_flankers.size() - 1)
-			var ratio = lerp(0.85, 0.2, t)
-			_flank_ratios[right_flankers[i]["enemy"].get_instance_id()] = ratio
-			print("RIGHT Flanker ", i, "/", right_flankers.size(), " - Dist: ", int(right_flankers[i]["dist"]), " - Ratio: ", "%.2f" % ratio)
+		if dist < best_score:
+			best_score = dist
+			best_enemy = enemy
+	
+	if best_enemy == null:
+		return
+	
+	_roles[best_enemy.get_instance_id()] = role
+	_target_positions[best_enemy.get_instance_id()] = target_pos
+	best_enemy.set_meta("assigned", true)

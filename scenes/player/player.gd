@@ -16,7 +16,7 @@ extends CharacterBody2D
 # -----------------------------------------------------------------------------
 
 # Vitesse de déplacement du joueur en pixels par seconde
-const SPEED = 450.0
+const SPEED = 200.0
 
 # Durée d'invincibilité après avoir reçu un coup (en secondes)
 const INVINCIBLE_DURATION = 1.0

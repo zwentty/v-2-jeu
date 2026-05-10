@@ -101,32 +101,14 @@ func _state_engage(delta: float) -> void:
 	
 	var dist = global_position.distance_to(player.global_position)
 	
-	# Peu importe le rôle : si à portée d'attaque, on attaque
+	# Si à portée d'attaque, on attaque
 	if dist < ATTACK_DISTANCE and attack_timer <= 0 and EnemyManager.can_attack(self):
 		state = State.ATTACK
 		windup_timer = attack_windup
 		return
 	
-	# Le rôle est dynamique : le manager le recalcule chaque frame
-	var role = EnemyManager.get_role(self)
-	
-	if role == EnemyManager.Role.PRESSURE:
-		_move_pressure()
-	else:
-		_move_flank()
-
-func _move_pressure() -> void:
-	_navigate_to(player.global_position)
-	_face_player()
-
-func _move_flank() -> void:
-	var dir_to_player = global_position.direction_to(player.global_position)
-	var side = EnemyManager.get_side(self)
-	var ratio = EnemyManager.get_flank_ratio(self)
-	var lateral = dir_to_player.rotated(PI / 2.0 if side == EnemyManager.Side.RIGHT else -PI / 2.0)
-	# Mélange entre direction vers joueur et direction latérale
-	var mixed_dir = (dir_to_player * ratio + lateral * (1.0 - ratio)).normalized()
-	var target = global_position + mixed_dir * 300.0
+	# Naviguer vers la position cible assignée par le manager
+	var target = EnemyManager.get_target_position(self)
 	_navigate_to(target)
 	_face_player()
 
