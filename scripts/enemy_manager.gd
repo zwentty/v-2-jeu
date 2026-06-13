@@ -4,15 +4,18 @@ extends Node
 
 # === ÉNUMÉRATION DES RÔLES ===
 enum Role {
-	INTERCEPT,    # Ennemi qui intercepte devant le joueur
-	FLANK_LEFT,   # Ennemi qui flanque à gauche
-	FLANK_RIGHT,  # Ennemi qui flanque à droite
-	CHASE         # Ennemi qui poursuit derrière
+	INTERCEPT,      # Ennemi qui intercepte devant le joueur
+	FLANK_LEFT,     # Ennemi qui flanque à gauche
+	FLANK_RIGHT,    # Ennemi qui flanque à droite
+	CHASE,          # Ennemi qui poursuit derrière
+	SURROUND_LEFT,  # Triangulation : position gauche
+	SURROUND_RIGHT, # Triangulation : position droite
+	SURROUND_BACK   # Triangulation : position arrière
 }
 
 # === CONSTANTES DE CONFIGURATION ===
 const MAX_ATTACKERS := 2           # Nombre maximum d'ennemis pouvant attaquer simultanément
-const UPDATE_RATE := 0.5           # Fréquence de réassignation des rôles (en secondes)
+const UPDATE_RATE := 0.2           # Fréquence de réassignation des rôles (en secondes)
 const PREDICT_TIME := 0.8          # Temps de prédiction du mouvement du joueur (en secondes)
 const INTERCEPT_DISTANCE := 330.0  # Distance de la position d'interception devant le joueur
 const FLANK_DISTANCE := 270.0      # Distance des positions de flanc (gauche/droite)
@@ -94,64 +97,133 @@ func _reassign_roles() -> void:
 	if _enemies.size() == 0 or _player == null:
 		return
 	
-	# === 1. PRÉDICTION DU MOUVEMENT DU JOUEUR ===
+	# Prédire la position future du joueur
 	var player_velocity = _player.velocity
-	var player_dir = Vector2.RIGHT  # Direction par défaut
-	
-	# Utiliser la direction du mouvement si le joueur bouge
-	if player_velocity.length() > 10:
-		player_dir = player_velocity.normalized()
-	
-	# Prédire où sera le joueur dans PREDICT_TIME secondes
 	var future_pos = _player.global_position + player_velocity * PREDICT_TIME
 	
-	# === 2. DÉTECTION D'ENCERCLEMENT ===
-	var is_encircled = _is_player_encircled()
+	# Calculer la direction de référence depuis la position CHASE vers le joueur
+	# Utilise la vélocité pour estimer où serait le CHASE, sinon une position par défaut
+	var chase_reference_pos: Vector2
+	if player_velocity.length() > 10:
+		var vel_dir = player_velocity.normalized()
+		chase_reference_pos = future_pos - vel_dir * CHASE_DISTANCE
+	else:
+		# Si le joueur est immobile, utiliser une position de référence derrière lui
+		chase_reference_pos = future_pos - Vector2.RIGHT * CHASE_DISTANCE
 	
-	# Activer le mode rush si le joueur est encerclé
-	if is_encircled:
-		_rush_mode = true
-		_rush_cooldown = RUSH_DURATION  # Réinitialiser le cooldown
+	# Direction de référence : depuis la position CHASE théorique vers le joueur
+	var player_dir = chase_reference_pos.direction_to(future_pos)
 	
-	# Désactiver le mode rush quand le cooldown expire
-	if _rush_cooldown <= 0.0:
-		_rush_mode = false
+	# Obtenir la liste des ennemis activement engagés
+	var engaged = _get_engaged_enemies()
 	
-	# === 3. MODE RUSH : TOUS LES ENNEMIS ATTAQUENT ===
+	# Gérer le mode rush (encerclement détecté)
+	_update_rush_mode()
 	if _rush_mode:
-		for enemy in _enemies:
-			_roles[enemy.get_instance_id()] = Role.INTERCEPT  # Tous foncent sur le joueur
-			_target_positions[enemy.get_instance_id()] = future_pos  # Cible = position prédite du joueur
-			enemy.set_meta("assigned", true)
-		print("RUSH MODE ACTIVE - Cooldown: ", "%.1f" % _rush_cooldown, "s")
-		return  # Sortir de la fonction, pas besoin d'assigner d'autres rôles
+		_apply_rush_strategy(engaged, future_pos)
+		return
 	
-	# === 4. MODE NORMAL : ASSIGNATION TACTIQUE DES RÔLES ===
-	
-	# Calculer les positions cibles pour chaque rôle autour du joueur
-	var role_positions = {
-		Role.INTERCEPT: future_pos + player_dir * INTERCEPT_DISTANCE,               # Devant le joueur
-		Role.FLANK_LEFT: future_pos + player_dir.rotated(-PI / 2.0) * FLANK_DISTANCE,  # À gauche
-		Role.FLANK_RIGHT: future_pos + player_dir.rotated(PI / 2.0) * FLANK_DISTANCE,  # À droite
-	}
-	
-	# Réinitialiser les métadonnées d'assignation
+	# Appliquer la stratégie tactique selon le nombre d'ennemis
+	_reset_assignments()
+	match engaged.size():
+		0, 1, 2:
+			_apply_direct_pursuit(engaged, future_pos)
+		3:
+			_apply_triangle_formation(engaged, future_pos, player_dir)
+		_:
+			_apply_advanced_tactics(engaged, future_pos, player_dir)
+
+# Retourne les ennemis qui poursuivent activement le joueur
+func _get_engaged_enemies() -> Array[Node]:
+	var engaged: Array[Node] = []
+	for enemy in _enemies:
+		if enemy.state == enemy.State.ENGAGE or enemy.state == enemy.State.ATTACK:
+			engaged.append(enemy)
+	return engaged
+
+# Met à jour le mode rush selon la détection d'encerclement
+func _update_rush_mode() -> void:
+	if _is_player_encircled():
+		_rush_mode = true
+		_rush_cooldown = RUSH_DURATION
+	elif _rush_cooldown <= 0.0:
+		_rush_mode = false
+
+# Réinitialise les métadonnées d'assignation
+func _reset_assignments() -> void:
 	for enemy in _enemies:
 		enemy.set_meta("assigned", false)
-	
-	# Assigner les 3 rôles prioritaires (1 ennemi pour chaque position)
-	_assign_best_enemy(Role.INTERCEPT, role_positions[Role.INTERCEPT])
-	_assign_best_enemy(Role.FLANK_LEFT, role_positions[Role.FLANK_LEFT])
-	_assign_best_enemy(Role.FLANK_RIGHT, role_positions[Role.FLANK_RIGHT])
-	
-	# Tous les ennemis restants deviennent CHASE (poursuivre derrière)
-	for enemy in _enemies:
-		if enemy.get_meta("assigned"):  # Ignorer ceux déjà assignés
-			continue
-		
-		_roles[enemy.get_instance_id()] = Role.CHASE
-		_target_positions[enemy.get_instance_id()] = future_pos - player_dir * CHASE_DISTANCE  # Derrière le joueur
+
+# STRATÉGIE RUSH : Tous les ennemis attaquent directement
+func _apply_rush_strategy(engaged: Array[Node], target_pos: Vector2) -> void:
+	for enemy in engaged:
+		_roles[enemy.get_instance_id()] = Role.INTERCEPT
+		_target_positions[enemy.get_instance_id()] = target_pos
 		enemy.set_meta("assigned", true)
+	print("RUSH MODE ACTIVE - Cooldown: %.1fs" % _rush_cooldown)
+
+# STRATÉGIE 1-2 ENNEMIS : Poursuite directe simple
+func _apply_direct_pursuit(engaged: Array[Node], target_pos: Vector2) -> void:
+	for enemy in engaged:
+		_roles[enemy.get_instance_id()] = Role.INTERCEPT
+		_target_positions[enemy.get_instance_id()] = target_pos
+		enemy.set_meta("assigned", true)
+
+# STRATÉGIE 3 ENNEMIS : Triangulation autour du joueur
+func _apply_triangle_formation(engaged: Array[Node], target_pos: Vector2, player_dir: Vector2) -> void:
+	# 1. Assigner l'ennemi qui poursuit par derrière (CHASE)
+	var chase_pos = target_pos - player_dir * CHASE_DISTANCE
+	var chase_enemy = _find_nearest_unassigned(engaged, chase_pos)
+	
+	if chase_enemy:
+		_roles[chase_enemy.get_instance_id()] = Role.SURROUND_BACK
+		_target_positions[chase_enemy.get_instance_id()] = chase_pos
+		chase_enemy.set_meta("assigned", true)
+		
+		# 2. Calculer la direction entre le joueur et l'ennemi CHASE
+		var chase_to_player = chase_enemy.global_position.direction_to(target_pos)
+		
+		# 3. Positionner les deux autres ennemis à gauche et droite pour intercepter (120° au lieu de 90°)
+		var positions = {
+			Role.SURROUND_LEFT: target_pos + chase_to_player.rotated(-2.0 * PI / 3.0) * FLANK_DISTANCE,   # 120° à gauche
+			Role.SURROUND_RIGHT: target_pos + chase_to_player.rotated(2.0 * PI / 3.0) * FLANK_DISTANCE,   # 120° à droite
+		}
+		
+		for role in [Role.SURROUND_LEFT, Role.SURROUND_RIGHT]:
+			_assign_best_enemy_from_list(role, positions[role], engaged)
+
+# STRATÉGIE 4+ ENNEMIS : Tactiques avancées avec rôles fixes
+func _apply_advanced_tactics(engaged: Array[Node], target_pos: Vector2, player_dir: Vector2) -> void:
+	# Positions tactiques : devant, gauche, droite
+	var positions = {
+		Role.INTERCEPT: target_pos + player_dir * INTERCEPT_DISTANCE,
+		Role.FLANK_LEFT: target_pos + player_dir.rotated(-PI / 2.0) * FLANK_DISTANCE,
+		Role.FLANK_RIGHT: target_pos + player_dir.rotated(PI / 2.0) * FLANK_DISTANCE,
+	}
+	
+	# Assigner les positions prioritaires
+	for role in [Role.INTERCEPT, Role.FLANK_LEFT, Role.FLANK_RIGHT]:
+		_assign_best_enemy_from_list(role, positions[role], engaged)
+	
+	# Les ennemis restants vont derrière
+	for enemy in engaged:
+		if not enemy.get_meta("assigned"):
+			_roles[enemy.get_instance_id()] = Role.CHASE
+			_target_positions[enemy.get_instance_id()] = target_pos - player_dir * CHASE_DISTANCE
+			enemy.set_meta("assigned", true)
+
+# Trouve l'ennemi non assigné le plus proche d'une position
+func _find_nearest_unassigned(enemies: Array[Node], target: Vector2) -> Node:
+	var best_enemy = null
+	var best_dist = INF
+	for enemy in enemies:
+		if enemy.get_meta("assigned"):
+			continue
+		var dist = enemy.global_position.distance_to(target)
+		if dist < best_dist:
+			best_dist = dist
+			best_enemy = enemy
+	return best_enemy
 
 # === DÉTECTION D'ENCERCLEMENT PAR COUVERTURE ANGULAIRE ===
 
@@ -200,14 +272,21 @@ func _is_player_encircled() -> bool:
 		elif not has_wall:
 			in_wall_section = false  # Fin de la section de mur
 	
-	# === 3. AJOUTER LES ANGLES DES ENNEMIS ===
+	# === 3. AJOUTER LES ANGLES DES ENNEMIS ENGAGÉS ===
+	# Ne compter QUE les ennemis qui poursuivent activement le joueur
+	var engaged_enemies = 0
 	for enemy in _enemies:
+		# Ignorer les ennemis en IDLE ou PATROL (autre pièce ou non engagés)
+		if enemy.state != enemy.State.ENGAGE and enemy.state != enemy.State.ATTACK:
+			continue
+		
 		var dir = _player.global_position.direction_to(enemy.global_position)
 		var angle = dir.angle()  # Angle entre -PI et +PI
 		angles.append(angle)
+		engaged_enemies += 1
 	
-	# Besoin d'au moins 3 points de couverture (ennemis + murs combinés)
-	if angles.size() < 3:
+	# Besoin d'au moins 3 ennemis ENGAGÉS + murs pour considérer un encerclement
+	if engaged_enemies < 3:
 		return false
 	
 	# === 4. CALCULER LE PLUS GRAND ÉCART ANGULAIRE ===
@@ -225,24 +304,22 @@ func _is_player_encircled() -> bool:
 		max_gap = max(max_gap, gap)  # Garder le plus grand écart
 	
 	# === 5. DÉTERMINER SI LE JOUEUR EST ENCERCLÉ ===
-	# Plus il y a d'ennemis, plus on tolère un grand écart
-	# 3 ennemis : max 140° | 4 ennemis : max 160° | 5+ ennemis : max 180°
-	var max_acceptable_gap = lerp(PI * 0.78, PI, min((_enemies.size() - 3) / 2.0, 1.0))
+	# Seuil uniforme de 180° pour tous les cas (déclenche facilement le rush)
+	var max_acceptable_gap = PI  # 180°
 	
 	# Debug : afficher les informations de détection
-	print("Enemies: ", _enemies.size(), " | Walls: ", (angles.size() - _enemies.size()), " | Max gap: ", rad_to_deg(max_gap), "° | Acceptable: ", rad_to_deg(max_acceptable_gap), "° | Encircled: ", max_gap < max_acceptable_gap)
+	print("Engaged enemies: ", engaged_enemies, " | Walls: ", (angles.size() - engaged_enemies), " | Max gap: ", rad_to_deg(max_gap), "° | Acceptable: ", rad_to_deg(max_acceptable_gap), "° | Encircled: ", max_gap < max_acceptable_gap)
 	
 	# Encerclé = le plus grand "trou" est plus petit que le seuil acceptable
 	return max_gap < max_acceptable_gap
 
-# === ASSIGNATION DU MEILLEUR ENNEMI POUR UN RÔLE ===
-
-func _assign_best_enemy(role: Role, target_pos: Vector2) -> void:
+# Assigne le meilleur ennemi pour un rôle parmi une liste spécifique
+func _assign_best_enemy_from_list(role: Role, target_pos: Vector2, enemy_list: Array[Node]) -> void:
 	var best_enemy = null
 	var best_score = INF  # Initialiser avec une valeur infinie
 	
-	# Parcourir tous les ennemis non encore assignés
-	for enemy in _enemies:
+	# Parcourir seulement les ennemis de la liste fournie
+	for enemy in enemy_list:
 		if enemy.get_meta("assigned"):  # Ignorer les ennemis déjà assignés
 			continue
 		

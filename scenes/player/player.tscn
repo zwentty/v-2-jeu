@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=15 format=3]
 
 ; -----------------------------------------------------------------------
 ; SECTION DES RESSOURCES EXTERNES
@@ -8,6 +8,8 @@
 ; On charge le script player.gd. Il sera attaché au nœud racine.
 ; "id=1" est juste un identifiant interne pour que les noeuds puissent y référer.
 [ext_resource type="Script" path="res://scenes/player/player.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://pftqrsgfjsj6" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Idle-Sheet.png" id="2"]
+[ext_resource type="Texture2D" uid="uid://b28whw6g5chq0" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Walk-Sheet.png" id="3"]
 
 ; -----------------------------------------------------------------------
 ; SECTION DES SOUS-RESSOURCES (ressources inline, sans fichier séparé)
@@ -25,6 +27,92 @@ radius = 14.0
 
 [sub_resource type="CircleShape2D" id="2"]
 radius = 30.0
+
+; Configuration des frames pour l'animation Idle
+[sub_resource type="AtlasTexture" id="idle_0"]
+atlas = ExtResource("2")
+region = Rect2(0, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="idle_1"]
+atlas = ExtResource("2")
+region = Rect2(96, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="idle_2"]
+atlas = ExtResource("2")
+region = Rect2(192, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="idle_3"]
+atlas = ExtResource("2")
+region = Rect2(288, 0, 96, 96)
+
+; Configuration des frames pour l'animation Walk
+[sub_resource type="AtlasTexture" id="walk_0"]
+atlas = ExtResource("3")
+region = Rect2(0, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="walk_1"]
+atlas = ExtResource("3")
+region = Rect2(96, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="walk_2"]
+atlas = ExtResource("3")
+region = Rect2(192, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="walk_3"]
+atlas = ExtResource("3")
+region = Rect2(288, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="walk_4"]
+atlas = ExtResource("3")
+region = Rect2(384, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="walk_5"]
+atlas = ExtResource("3")
+region = Rect2(480, 0, 96, 96)
+
+; SpriteFrames : ressource qui contient toutes les animations
+[sub_resource type="SpriteFrames" id="spriteframes"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("idle_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("idle_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("idle_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("idle_3")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("walk_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("walk_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("walk_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("walk_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("walk_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("walk_5")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 10.0
+}]
 
 ; -----------------------------------------------------------------------
 ; SECTION DES NOEUDS
@@ -44,22 +132,19 @@ collision_mask = 2
 script = ExtResource("1")
 
 ; --- REPRÉSENTATION VISUELLE ---
-; Polygon2D : dessine un polygone coloré. C'est notre "sprite temporaire".
-; Plus tard, ce nœud sera remplacé par un Sprite2D avec une vraie image.
-; "parent="."" → enfant direct du nœud Player.
-;
-; color : couleur bleue en RGBA (Rouge, Vert, Bleu, Alpha)
-;   0.2 rouge, 0.5 vert, 0.9 bleu = bleu vif
-;
-; polygon : liste de points qui définissent la forme.
-;   (-16,-16) = coin haut-gauche
-;   ( 16,-16) = coin haut-droit
-;   ( 16, 16) = coin bas-droit
-;   (-16, 16) = coin bas-gauche
-;   → carré de 32x32 pixels centré sur l'origine (0,0) du nœud
-[node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.2, 0.5, 0.9, 1)
-polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
+; AnimatedSprite2D : affiche des animations à partir de spritesheets
+; Remplace l'ancien Polygon2D temporaire
+; texture_filter = 1 → NEAREST (pas de flou, rendu pixel art net)
+; scale = 1.5 → agrandi à 150% (144x144 pixels)
+[node name="Visual" type="AnimatedSprite2D" parent="."]
+texture_filter = 1
+sprite_frames = SubResource("spriteframes")
+animation = &"idle"
+autoplay = "idle"
+frame = 0
+frame_progress = 0.0
+offset = Vector2(0, 8)
+scale = Vector2(1.5, 1.5)
 
 ; --- BARRE DE VIE ---
 ; ProgressBar : affiche les PV du joueur sous forme de barre

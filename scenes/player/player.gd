@@ -40,7 +40,7 @@ const ATTACK_DAMAGE = 1
 # -----------------------------------------------------------------------------
 
 # Points de vie actuels
-var health: int = 3
+var health: int = 500
 
 # Points de vie maximum
 var max_health: int = 3
@@ -66,6 +66,9 @@ var attack_cooldown_timer: float = 0.0
 
 # Référence à l'inventaire
 var inventory: Control = null
+
+# Référence à l'AnimatedSprite2D pour gérer les animations
+@onready var animated_sprite: AnimatedSprite2D = $Visual
 
 # -----------------------------------------------------------------------------
 # _ready()
@@ -158,6 +161,20 @@ func _handle_movement() -> void:
 		# On mémorise la dernière direction pour savoir où le joueur regarde.
 		# Utile plus tard pour placer une hitbox d'attaque dans la bonne direction.
 		facing_direction = direction
+		
+		# Jouer l'animation de marche
+		if animated_sprite.animation != "walk":
+			animated_sprite.play("walk")
+		
+		# Inverser le sprite horizontalement selon la direction
+		if direction.x < 0:
+			animated_sprite.flip_h = true
+		elif direction.x > 0:
+			animated_sprite.flip_h = false
+	else:
+		# Le joueur ne bouge pas → animation idle
+		if animated_sprite.animation != "idle":
+			animated_sprite.play("idle")
 
 	# On assigne la vélocité. "velocity" est une propriété de CharacterBody2D.
 	# Elle représente le déplacement souhaité par frame.
