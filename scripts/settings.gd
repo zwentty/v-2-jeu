@@ -11,6 +11,7 @@ var key_move_down: int = KEY_S
 var key_move_right: int = KEY_D
 var key_inventory: int = KEY_I
 var key_pickup: int = KEY_E
+var key_dash: int = KEY_SPACE
 
 # Fichier de sauvegarde
 const SETTINGS_FILE: String = "user://settings.cfg"
@@ -33,6 +34,7 @@ func load_settings() -> void:
 	key_move_right = config.get_value("keys", "move_right", KEY_D)
 	key_inventory = config.get_value("keys", "inventory", KEY_I)
 	key_pickup = config.get_value("keys", "pickup", KEY_E)
+	key_dash = config.get_value("keys", "dash", KEY_SPACE)
 	
 	# Charger le plein écran
 	var fullscreen: bool = config.get_value("display", "fullscreen", false)
@@ -48,6 +50,7 @@ func save_settings() -> void:
 	config.set_value("keys", "move_right", key_move_right)
 	config.set_value("keys", "inventory", key_inventory)
 	config.set_value("keys", "pickup", key_pickup)
+	config.set_value("keys", "dash", key_dash)
 	
 	# Sauvegarder le plein écran
 	config.set_value("display", "fullscreen", DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN)
