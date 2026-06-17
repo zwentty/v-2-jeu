@@ -23,26 +23,38 @@ const CHASE_DISTANCE := 230.0      # Distance de la position de poursuite derri�
 const RUSH_DURATION := 2.0         # Durée du mode rush après déclenchement (en secondes)
 
 # === VARIABLES D'ÉTAT ===
-var _enemies: Array[Node] = []           # Liste de tous les ennemis enregistrés
+var _enemies: Array[Node] = []           # Liste des ennemis de mêlée
+var _ranged_enemies: Array[Node] = []    # Liste des ennemis à distance
 var _roles: Dictionary = {}              # Dictionnaire : instance_id → Role assigné
 var _target_positions: Dictionary = {}   # Dictionnaire : instance_id → Vector2 position cible
 var _player: Node2D = null               # Référence au joueur
 var _timer: float = 0.0                  # Timer pour la réassignation périodique des rôles
-var _rush_mode: bool = false             # Mode rush actif (tous les ennemis attaquent)
+var _rush_mode: bool = false             # Mode rush actif (tous les ennemis de mêlée attaquent)
 var _rush_cooldown: float = 0.0          # Temps restant avant désactivation du mode rush
+var _room2_activated: bool = false       # Indique si la salle 2 a été activée
 
 # === FONCTIONS PUBLIQUES (API pour les ennemis) ===
 
 # Enregistre un ennemi dans le système de coordination
 func register(enemy: Node) -> void:
-	if enemy in _enemies:  # Empêcher les doublons
-		return
-	_enemies.append(enemy)
+	# Déterminer le type d'ennemi (mêlée ou à distance)
+	var is_ranged = enemy.get_script().resource_path.contains("ranged_enemy")
+	
+	if is_ranged:
+		if enemy in _ranged_enemies:
+			return
+		_ranged_enemies.append(enemy)
+	else:
+		if enemy in _enemies:
+			return
+		_enemies.append(enemy)
+	
 	enemy.set_meta("assigned", false)  # Métadonnée pour tracking de l'assignation
 
 # Désenregistre un ennemi (appelé quand il meurt)
 func unregister(enemy: Node) -> void:
 	_enemies.erase(enemy)
+	_ranged_enemies.erase(enemy)
 	_roles.erase(enemy.get_instance_id())          # Nettoyer le rôle assigné
 	_target_positions.erase(enemy.get_instance_id())  # Nettoyer la position cible
 
@@ -70,6 +82,11 @@ func _process(delta: float) -> void:
 		return
 	_cleanup()  # Nettoyer les ennemis morts/invalides
 	
+	# Activer les ennemis de la salle 2 quand le joueur y entre
+	if not _room2_activated and _player.global_position.x >= 2560.0:
+		_activate_room2()
+		_room2_activated = true
+	
 	# Décrémenter le cooldown du mode rush
 	if _rush_cooldown > 0.0:
 		_rush_cooldown -= delta
@@ -78,7 +95,8 @@ func _process(delta: float) -> void:
 	_timer += delta
 	if _timer >= UPDATE_RATE:
 		_timer = 0.0
-		_reassign_roles()
+		_reassign_roles()           # Ennemis de mêlée
+		_reassign_ranged_roles()    # Ennemis à distance
 
 # Trouve et stocke la référence au joueur
 func _find_player() -> void:
@@ -90,8 +108,72 @@ func _find_player() -> void:
 # Nettoie la liste des ennemis en retirant ceux qui sont morts ou invalides
 func _cleanup() -> void:
 	_enemies = _enemies.filter(func(e): return is_instance_valid(e) and e.state != e.State.DEAD)
+	_ranged_enemies = _ranged_enemies.filter(func(e): return is_instance_valid(e) and e.state != e.State.DEAD)
+
+# Active tous les ennemis de la salle 2
+func _activate_room2() -> void:
+	# Activer ennemis de mêlée
+	for enemy in _enemies:
+		if is_instance_valid(enemy) and enemy.room_number == 2:
+			enemy.visible = true
+			enemy.process_mode = Node.PROCESS_MODE_INHERIT
+			enemy.detection_area.monitoring = true
+	
+	# Activer ennemis à distance
+	for enemy in _ranged_enemies:
+		if is_instance_valid(enemy) and enemy.room_number == 2:
+			enemy.visible = true
+			enemy.process_mode = Node.PROCESS_MODE_INHERIT
+			enemy.detection_area.monitoring = true
 
 # === LOGIQUE DE RÉASSIGNATION DES RÔLES ===
+
+# Réassigne les positions des ennemis à distance (cercle autour du joueur)
+func _reassign_ranged_roles() -> void:
+	if _ranged_enemies.size() == 0 or _player == null:
+		return
+	
+	# Filtrer les ennemis à distance engagés (ENGAGE ou ATTACK)
+	var engaged_ranged = _get_engaged_ranged_enemies()
+	if engaged_ranged.size() == 0:
+		return
+	
+	var player_pos = _player.global_position
+	
+	# Positionner les ennemis en cercle autour du joueur à leur distance optimale
+	var angle_step = TAU / engaged_ranged.size()  # TAU = 2*PI, répartition uniforme
+	
+	# Trier les ennemis par angle actuel pour minimiser les croisements
+	var enemies_with_angles = []
+	for enemy in engaged_ranged:
+		var to_enemy = enemy.global_position - player_pos
+		var current_angle = atan2(to_enemy.y, to_enemy.x)
+		enemies_with_angles.append({"enemy": enemy, "angle": current_angle})
+	
+	# Trier par angle croissant
+	enemies_with_angles.sort_custom(func(a, b): return a.angle < b.angle)
+	
+	for i in range(enemies_with_angles.size()):
+		var enemy = enemies_with_angles[i].enemy
+		var optimal_dist = enemy.optimal_distance  # Distance optimale de l'ennemi
+		
+		# Calculer l'angle cible pour cet ennemi (répartition uniforme)
+		var angle = angle_step * i
+		
+		# Position cible sur le cercle
+		var offset = Vector2(cos(angle), sin(angle)) * optimal_dist
+		var target_pos = player_pos + offset
+		
+		# Assigner la position cible
+		_target_positions[enemy.get_instance_id()] = target_pos
+
+# Retourne la liste des ennemis à distance engagés (ENGAGE ou ATTACK uniquement)
+func _get_engaged_ranged_enemies() -> Array:
+	var engaged = []
+	for enemy in _ranged_enemies:
+		if is_instance_valid(enemy) and (enemy.state == enemy.State.ENGAGE or enemy.state == enemy.State.ATTACK):
+			engaged.append(enemy)
+	return engaged
 
 func _reassign_roles() -> void:
 	if _enemies.size() == 0 or _player == null:
@@ -126,10 +208,9 @@ func _reassign_roles() -> void:
 	# Appliquer la stratégie tactique selon le nombre d'ennemis
 	_reset_assignments()
 	match engaged.size():
-		0, 1, 2:
-			_apply_direct_pursuit(engaged, future_pos)
-		3:
-			_apply_triangle_formation(engaged, future_pos, player_dir)
+		0, 1, 2, 3:
+			# Poursuite directe : les ennemis suivent la position actuelle du joueur
+			_apply_direct_pursuit(engaged, _player.global_position)
 		_:
 			_apply_advanced_tactics(engaged, future_pos, player_dir)
 

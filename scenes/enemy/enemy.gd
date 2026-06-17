@@ -83,6 +83,12 @@ func _ready() -> void:
 	hitbox_shape.disabled = true
 	hitbox_visual.visible = false
 	
+	# Désactiver les ennemis de la salle 2 jusqu'à ce que le joueur y entre
+	if room_number == 2:
+		visible = false
+		process_mode = Node.PROCESS_MODE_DISABLED
+		detection_area.monitoring = false
+	
 	_pick_patrol_point()  # Choisir un premier point de patrouille
 
 # === BOUCLE PRINCIPALE ===
@@ -126,6 +132,7 @@ func _state_patrol(delta: float) -> void:
 func _state_engage(delta: float) -> void:
 	# Si le joueur disparaît ou change de salle → retourner en patrouille
 	if player == null or not _player_in_same_room():
+		player = null  # Réinitialiser la référence pour permettre une nouvelle détection
 		state = State.PATROL
 		_pick_patrol_point()
 		return
@@ -165,8 +172,12 @@ func _state_attack(delta: float) -> void:
 		
 		# Retourner en ENGAGE après la durée d'attaque
 		await get_tree().create_timer(HITBOX_ACTIVE_DURATION).timeout
-		if state == State.ATTACK and player:
+		if state == State.ATTACK and player and _player_in_same_room():
 			state = State.ENGAGE
+		elif state == State.ATTACK:
+			player = null  # Réinitialiser si joueur a changé de salle
+			state = State.PATROL
+			_pick_patrol_point()
 
 # DEAD : Ne rien faire (l'ennemi sera supprimé)
 func _state_dead() -> void:
@@ -197,7 +208,10 @@ func _on_hitbox_hit(body: Node2D) -> void:
 func _on_player_detected(body: Node2D) -> void:
 	if body.is_in_group("player") and state != State.DEAD:
 		player = body  # Mémoriser la référence au joueur
-		state = State.ENGAGE  # Passer en mode engagement
+		
+		# Vérifier que le joueur est dans la même salle avant d'engager
+		if _player_in_same_room():
+			state = State.ENGAGE  # Passer en mode engagement seulement si même salle
 
 # === NAVIGATION ET MOUVEMENT ===
 
