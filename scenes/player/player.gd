@@ -104,7 +104,9 @@ func _ready() -> void:
 	
 	# Initialiser la barre de vie
 	_update_health_bar()
-
+	
+	# Définir le z_index du joueur pour être toujours au-dessus des cadavres
+	z_index = 2
 	
 	# Connecter le signal de l'Area2D pour détecter les ennemis touchés
 	$AttackArea.body_entered.connect(_on_attack_hit)
