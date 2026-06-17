@@ -289,26 +289,14 @@ func die() -> void:
 	
 	EnemyManager.unregister(self)  # Se désenregistrer du manager
 	
-	# Transformer le cadavre en élément traversable au sol
-	$Visual.color = Color.BLACK  # Changer la couleur en noir
-	$HealthBar.visible = false  # Masquer la barre de vie
+	# Faire apparaître un objet à ramasser
+	var item_scene: PackedScene = load("res://scenes/items/item.tscn")
+	var item: Node2D = item_scene.instantiate()
+	item.global_position = global_position
+	item.item_name = "Butin d'ennemi"
+	get_parent().add_child(item)
 	
-	# Désactiver les zones de détection et d'attaque
-	detection_area.set_deferred("monitoring", false)
-	attack_area.set_deferred("monitoring", false)
-	
-	# Permettre au joueur de passer à travers le cadavre
-	collision_layer = 0  # Le cadavre n'existe plus sur aucune couche
-	collision_mask = 0   # Le cadavre ne détecte plus rien
-	
-	# Transformer le cadavre en item ramassable
-	add_to_group("item")  # Ajouter au groupe item
-	z_index = 1  # Placer le cadavre entre le sol (0) et le joueur
-
-# Fonction appelée quand le joueur ramasse le cadavre
-func pickup() -> String:
-	queue_free()  # Supprimer le cadavre de la scène
-	return "Cadavre d'ennemi"
+	queue_free()  # Supprimer l'ennemi de la scène
 
 # Met à jour l'affichage de la barre de vie
 func _update_health_bar() -> void:
