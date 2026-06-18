@@ -88,7 +88,7 @@ func _ready() -> void:
 		visible = false
 		process_mode = Node.PROCESS_MODE_DISABLED
 		detection_area.monitoring = false
-	
+
 	_pick_patrol_point()  # Choisir un premier point de patrouille
 
 # === BOUCLE PRINCIPALE ===
@@ -132,7 +132,7 @@ func _state_patrol(delta: float) -> void:
 func _state_engage(delta: float) -> void:
 	# Si le joueur disparaît ou change de salle → retourner en patrouille
 	if player == null or not _player_in_same_room():
-		player = null  # Réinitialiser la référence pour permettre une nouvelle détection
+		player = null
 		state = State.PATROL
 		_pick_patrol_point()
 		return
@@ -208,10 +208,8 @@ func _on_hitbox_hit(body: Node2D) -> void:
 func _on_player_detected(body: Node2D) -> void:
 	if body.is_in_group("player") and state != State.DEAD:
 		player = body  # Mémoriser la référence au joueur
-		
-		# Vérifier que le joueur est dans la même salle avant d'engager
-		if _player_in_same_room():
-			state = State.ENGAGE  # Passer en mode engagement seulement si même salle
+	if _player_in_same_room():	
+		state = State.ENGAGE  # Passer en mode engagement
 
 # === NAVIGATION ET MOUVEMENT ===
 
@@ -297,8 +295,8 @@ func die() -> void:
 	item.item_color = Color.BLACK
 	item.item_polygon = PackedVector2Array([Vector2(-16, -16), Vector2(16, -16), Vector2(16, 16), Vector2(-16, 16)])
 	get_parent().add_child(item)
+	queue_free()  # Supprimer le cadavre de la scène
 	
-	queue_free()  # Supprimer l'ennemi de la scène
 
 # Met à jour l'affichage de la barre de vie
 func _update_health_bar() -> void:
