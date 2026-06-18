@@ -289,11 +289,13 @@ func die() -> void:
 	
 	EnemyManager.unregister(self)  # Se désenregistrer du manager
 	
-	# Faire apparaître un objet à ramasser
+	# Faire apparaître un objet à ramasser (même forme que l'ennemi mais en noir)
 	var item_scene: PackedScene = load("res://scenes/items/item.tscn")
 	var item: Node2D = item_scene.instantiate()
 	item.global_position = global_position
-	item.item_name = "Butin d'ennemi"
+	item.item_name = "Âme de Soldat"
+	item.item_color = Color.BLACK
+	item.item_polygon = PackedVector2Array([Vector2(-16, -16), Vector2(16, -16), Vector2(16, 16), Vector2(-16, 16)])
 	get_parent().add_child(item)
 	
 	queue_free()  # Supprimer l'ennemi de la scène

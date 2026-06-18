@@ -292,7 +292,16 @@ func take_damage(amount: int) -> void:
 func die() -> void:
 	state = State.DEAD
 	EnemyManager.unregister(self)
-	
+
+	# Faire apparaître un objet à ramasser (même forme que l'ennemi mais en noir)
+	var item_scene: PackedScene = load("res://scenes/items/item.tscn")
+	var item: Node2D = item_scene.instantiate()
+	item.global_position = global_position
+	item.item_name = "Âme de Slime"
+	item.item_color = Color.BLACK
+	item.item_polygon = PackedVector2Array([Vector2(-20, -20), Vector2(20, -20), Vector2(20, 20), Vector2(-20, 20)])
+	get_parent().add_child(item)
+
 	# Animation de mort (fade out simple)
 	var tween = create_tween()
 	tween.tween_property(visual, "modulate:a", 0.0, 0.3)

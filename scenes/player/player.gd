@@ -32,8 +32,8 @@ const DASH_COOLDOWN = 0.8
 # VARIABLES D'ÉTAT
 # -----------------------------------------------------------------------------
 
-var health: int = 3
-var max_health: int = 3
+var health: int = 25
+var max_health: int = 25
 var is_invincible: bool = false
 var invincible_timer: float = 0.0
 

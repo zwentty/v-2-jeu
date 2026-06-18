@@ -4,22 +4,41 @@
 # =============================================================================
 extends Area2D
 
-# Nom de l'objet
 @export var item_name: String = "Objet"
+# Couleur et forme du visuel — surchargées à l'instanciation pour les drops ennemis
+@export var item_color: Color = Color(1, 0.8, 0, 1)
+@export var item_polygon: PackedVector2Array
 
-# Est-ce que le joueur est à proximité ?
 var player_nearby: bool = false
 
 func _ready() -> void:
-	# Ajouter au groupe "item" pour que le joueur puisse les détecter
 	add_to_group("item")
-	
-	# Connecter les signaux de détection
+
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
-	
-	# Afficher la touche de ramassage configurée
+
 	$Label.text = OS.get_keycode_string(Settings.key_pickup)
+
+	$Visual.color = item_color
+	if item_polygon.size() > 0:
+		$Visual.polygon = item_polygon
+
+	_spread_from_nearby_items()
+
+# Déplace l'item si un autre item est déjà trop proche
+func _spread_from_nearby_items() -> void:
+	const MIN_DIST := 24.0
+	for _attempt in range(8):
+		var overlapping := false
+		for other in get_tree().get_nodes_in_group("item"):
+			if other == self:
+				continue
+			if global_position.distance_to(other.global_position) < MIN_DIST:
+				overlapping = true
+				break
+		if not overlapping:
+			break
+		global_position += Vector2.from_angle(randf() * TAU) * MIN_DIST
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player"):
@@ -33,5 +52,5 @@ func _on_body_exited(body: Node2D) -> void:
 
 # Fonction appelée par le joueur pour ramasser l'objet
 func pickup() -> String:
-	queue_free()  # Supprime l'objet de la scène
+	queue_free()
 	return item_name
