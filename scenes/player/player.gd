@@ -3,112 +3,70 @@
 # Script attaché au nœud Player (CharacterBody2D)
 # =============================================================================
 
-# "extends CharacterBody2D" signifie que ce script HÉRITE de la classe
-# CharacterBody2D de Godot. Cela nous donne accès à :
-#   - la propriété "velocity" (vecteur de déplacement)
-#   - la méthode "move_and_slide()" (gestion physique + collisions)
 extends CharacterBody2D
 
 # -----------------------------------------------------------------------------
 # CONSTANTES
-# Les constantes ne changent jamais pendant le jeu (mot-clé "const").
-# On les écrit en MAJUSCULES par convention.
 # -----------------------------------------------------------------------------
 
-# Vitesse de déplacement du joueur en pixels par seconde
 const SPEED = 200.0
-
-# Durée d'invincibilité après avoir reçu un coup (en secondes)
 const INVINCIBLE_DURATION = 1.0
 
-# Distance de la hitbox d'attaque par rapport au joueur
-const ATTACK_DISTANCE = 50.0
-
-# Durée de l'attaque (temps où la hitbox reste active)
-const ATTACK_DURATION = 0.2
-
-# Cooldown entre deux attaques (temps minimum entre deux clics)
-const ATTACK_COOLDOWN = 0.5
-
-# Dégâts infligés par l'attaque
+# Attaque-dash : le joueur fonce vers la souris pour infliger des dégâts
+const ATTACK_DASH_SPEED = 500.0
+const ATTACK_DASH_DURATION = 0.30
+const ATTACK_DASH_COOLDOWN = 1.2
 const ATTACK_DAMAGE = 1
 
-# Vitesse du dash en pixels par seconde
+# Knockback + stun infligés au joueur après avoir touché un ennemi
+const PLAYER_KNOCKBACK_SPEED = 300.0
+const PLAYER_KNOCKBACK_DURATION = 0.25
+const PLAYER_STUN_DURATION = 0.8
+
+# Dash de déplacement (touche configurable)
 const DASH_SPEED = 600.0
-
-# Durée du dash en secondes
 const DASH_DURATION = 0.3
-
-# Cooldown du dash en secondes
 const DASH_COOLDOWN = 0.8
 
 # -----------------------------------------------------------------------------
 # VARIABLES D'ÉTAT
-# Ces valeurs changent pendant le jeu (mot-clé "var").
-# ":= " est l'affectation avec inférence de type (Godot devine le type).
 # -----------------------------------------------------------------------------
 
-# Points de vie actuels
 var health: int = 3
-
-# Points de vie maximum
 var max_health: int = 3
-
-# Est-ce que le joueur est en ce moment invincible ?
 var is_invincible: bool = false
-
-# Compteur interne qui mesure le temps d'invincibilité restant
 var invincible_timer: float = 0.0
 
-# Est-ce que le joueur est en train de faire un dash ?
+# Dash de déplacement
 var is_dashing: bool = false
-
-# Timer du dash (durée restante du dash)
 var dash_timer: float = 0.0
-
-# Timer du cooldown du dash
 var dash_cooldown_timer: float = 0.0
-
-# Direction du dash
 var dash_direction: Vector2 = Vector2.ZERO
 
-# Direction dans laquelle le joueur regarde (utile plus tard pour l'attaque)
-# Vector2.DOWN = (0, 1) par défaut → le joueur regarde vers le bas au départ
+# Attaque-dash
+var is_attack_dashing: bool = false
+var attack_dash_timer: float = 0.0
+var attack_dash_cooldown_timer: float = 0.0
+var attack_dash_direction: Vector2 = Vector2.ZERO
+
+# Stun + knockback du joueur après impact
+var is_stunned: bool = false
+var stun_timer: float = 0.0
+var knockback_velocity: Vector2 = Vector2.ZERO
+var knockback_timer: float = 0.0
+
 var facing_direction: Vector2 = Vector2.DOWN
-
-# Est-ce que le joueur est en train d'attaquer ?
-var is_attacking: bool = false
-
-# Timer de l'attaque (durée d'activation de la hitbox)
-var attack_timer: float = 0.0
-
-# Timer du cooldown d'attaque (temps avant de pouvoir attaquer à nouveau)
-var attack_cooldown_timer: float = 0.0
-
-# Référence à l'inventaire
 var inventory: Control = null
 
-# Référence à l'AnimatedSprite2D pour gérer les animations
 @onready var animated_sprite: AnimatedSprite2D = $Visual
 
 # -----------------------------------------------------------------------------
 # _ready()
-# Appelée UNE SEULE FOIS quand le nœud entre dans la scène.
-# C'est l'équivalent d'un constructeur / d'une initialisation.
 # -----------------------------------------------------------------------------
 func _ready() -> void:
-	# On ajoute le joueur au groupe "player".
-	# Les groupes sont des étiquettes : n'importe quel autre script peut faire
-	# get_tree().get_first_node_in_group("player") pour trouver ce nœud.
 	add_to_group("player")
-	
-	# Initialiser la barre de vie
 	_update_health_bar()
-	
-	# Définir le z_index du joueur pour être toujours au-dessus des cadavres
 	z_index = 2
-	
-	# Connecter le signal de l'Area2D pour détecter les ennemis touchés
 	$AttackArea.body_entered.connect(_on_attack_hit)
 
 # -----------------------------------------------------------------------------
@@ -126,252 +84,271 @@ func _get_inventory() -> Control:
 
 # -----------------------------------------------------------------------------
 # _physics_process(delta)
-# Appelée à CHAQUE FRAME physique (par défaut 60 fois/seconde).
-# "delta" = temps écoulé depuis la dernière frame (≈ 0.016 s à 60fps).
-# On multiplie toujours les vitesses par delta pour que le jeu soit
-# indépendant du framerate (sinon un PC à 30fps irait 2x plus lentement).
 # -----------------------------------------------------------------------------
 func _physics_process(delta: float) -> void:
 	_handle_dash(delta)
-	if not is_dashing:
+	_handle_attack_dash(delta)
+	_handle_stun(delta)
+	if not is_dashing and not is_attack_dashing and not is_stunned:
 		_handle_movement()
 	_handle_invincibility(delta)
-	_handle_attack(delta)
+	_update_visual()
 
 # -----------------------------------------------------------------------------
 # _unhandled_input(event)
-# Gère les entrées clavier ponctuelles (ramassage)
 # -----------------------------------------------------------------------------
 func _unhandled_input(event: InputEvent) -> void:
+	# Attaque-dash sur clic gauche
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if not is_stunned and not is_dashing and attack_dash_cooldown_timer <= 0.0:
+			var mouse_pos := get_global_mouse_position()
+			var direction := (mouse_pos - global_position).normalized()
+			if direction == Vector2.ZERO:
+				direction = facing_direction
+			_start_attack_dash(direction)
+			get_viewport().set_input_as_handled()
+		return
+
 	if event is InputEventKey and event.pressed and not event.echo:
-		# Touche de dash (configurable)
-		if event.keycode == Settings.key_dash and not is_dashing and dash_cooldown_timer <= 0.0:
+		# Dash de déplacement
+		if event.keycode == Settings.key_dash and not is_dashing and not is_attack_dashing and dash_cooldown_timer <= 0.0:
 			_start_dash()
 			get_viewport().set_input_as_handled()
 			return
-		
-		# Touche de ramassage (configurable)
+
+		# Ramassage d'objet
 		if event.keycode == Settings.key_pickup:
-			# Chercher les objets à proximité
 			var items := get_tree().get_nodes_in_group("item")
-			
 			for item in items:
-				# Vérifier si l'objet a la méthode pickup (objet ramassable)
 				if item.has_method("pickup"):
-					# Vérifier la distance
 					var distance := global_position.distance_to(item.global_position)
-					if distance <= 50.0:  # Portée de ramassage : 50 pixels
-						# Ramasser l'objet
+					if distance <= 50.0:
 						var item_name: String = item.pickup()
 						var inv := _get_inventory()
 						if inv:
 							inv.add_item(item_name)
 						get_viewport().set_input_as_handled()
-						break  # Ne ramasser qu'un objet à la fois
+						break
 
 # -----------------------------------------------------------------------------
 # _handle_movement()
-# Lit les entrées clavier et déplace le joueur.
-# Séparé dans sa propre fonction pour garder _physics_process() lisible.
-# Utilise les touches ZQSD : Z=haut, Q=gauche, S=bas, D=droite
+# Lit les entrées clavier et déplace le joueur (ZQSD / AZERTY)
 # -----------------------------------------------------------------------------
 func _handle_movement() -> void:
-	# On lit les touches depuis Settings
 	var direction := Vector2(
-		(-1.0 if Input.is_key_pressed(Settings.key_move_left) else 0.0) + (1.0 if Input.is_key_pressed(Settings.key_move_right) else 0.0),  # axe horizontal
-		(-1.0 if Input.is_key_pressed(Settings.key_move_up) else 0.0) + (1.0 if Input.is_key_pressed(Settings.key_move_down) else 0.0)   # axe vertical
+		(-1.0 if Input.is_key_pressed(Settings.key_move_left) else 0.0) + (1.0 if Input.is_key_pressed(Settings.key_move_right) else 0.0),
+		(-1.0 if Input.is_key_pressed(Settings.key_move_up) else 0.0) + (1.0 if Input.is_key_pressed(Settings.key_move_down) else 0.0)
 	)
 
-	# Si le joueur appuie sur une direction...
 	if direction != Vector2.ZERO:
-		# .normalized() garantit que la vitesse en diagonale est identique
-		# à la vitesse en ligne droite. Sans ça, aller en diagonale serait
-		# ~1.41x plus rapide (Pythagore : √(1²+1²) ≈ 1.41).
 		direction = direction.normalized()
-
-		# On mémorise la dernière direction pour savoir où le joueur regarde.
-		# Utile plus tard pour placer une hitbox d'attaque dans la bonne direction.
 		facing_direction = direction
-		
-		# Jouer l'animation de marche
+
 		if animated_sprite.animation != "walk":
 			animated_sprite.play("walk")
-		
-		# Inverser le sprite horizontalement selon la direction
+
 		if direction.x < 0:
 			animated_sprite.flip_h = true
 		elif direction.x > 0:
 			animated_sprite.flip_h = false
 	else:
-		# Le joueur ne bouge pas → animation idle
 		if animated_sprite.animation != "idle":
 			animated_sprite.play("idle")
 
-	# On assigne la vélocité. "velocity" est une propriété de CharacterBody2D.
-	# Elle représente le déplacement souhaité par frame.
 	velocity = direction * SPEED
-
-	# move_and_slide() utilise "velocity" pour déplacer le nœud.
-	# Elle gère automatiquement les collisions :
-	#   - le joueur glisse le long des murs au lieu de se bloquer
-	#   - elle corrige "velocity" si une collision a lieu
-	# NOTE : on utilise un CircleShape2D pour la collision du joueur (dans le .tscn)
-	# car un rectangle a des "coins" qui accrochent les murs → le bug de collage.
-	# Un cercle glisse parfaitement sur n'importe quel angle de mur.
 	move_and_slide()
 
 # -----------------------------------------------------------------------------
 # _handle_invincibility(delta)
-# Gère le clignotement et le timer d'invincibilité.
+# Gère le timer d'invincibilité après avoir reçu un coup
 # -----------------------------------------------------------------------------
 func _handle_invincibility(delta: float) -> void:
 	if not is_invincible:
-		return  # Rien à faire si le joueur n'est pas invincible
-
-	# On diminue le timer d'invincibilité
+		return
 	invincible_timer -= delta
-
-	# Clignotement visuel : on alterne la transparence en fonction du temps
-	# "fmod" = modulo sur float. fmod(temps, 0.2) oscille entre 0 et 0.2 en boucle.
-	# Si l'oscillation est < 0.1 → semi-transparent, sinon → opaque.
-	$Visual.modulate.a = 0.3 if fmod(invincible_timer, 0.2) < 0.1 else 1.0
-
-	# Quand le timer atteint 0, l'invincibilité est terminée
 	if invincible_timer <= 0.0:
 		is_invincible = false
-		$Visual.modulate.a = 1.0  # On remet la couleur opaque
+
+# -----------------------------------------------------------------------------
+# _update_visual()
+# Gère la couleur/transparence du sprite selon l'état actuel.
+# Priorité : stun > attaque-dash > dash déplacement > invincible > normal
+# -----------------------------------------------------------------------------
+func _update_visual() -> void:
+	if is_stunned:
+		# Rouge clignotant : le joueur est étourdi après l'impact
+		$Visual.modulate = Color(1.0, 0.3, 0.3, 0.6 if fmod(stun_timer, 0.15) < 0.075 else 1.0)
+	elif is_attack_dashing:
+		# Bleu clignotant : le joueur est intangible pendant l'attaque-dash
+		$Visual.modulate = Color(0.5, 0.8, 1.0, 0.6 if fmod(attack_dash_timer, 0.1) < 0.05 else 1.0)
+	elif is_dashing:
+		# Semi-transparent : intangible pendant le dash de déplacement
+		$Visual.modulate = Color(1.0, 1.0, 1.0, 0.6 if fmod(dash_timer, 0.15) < 0.075 else 1.0)
+	elif is_invincible:
+		# Clignotement blanc après avoir reçu un coup
+		$Visual.modulate = Color(1.0, 1.0, 1.0, 0.3 if fmod(invincible_timer, 0.2) < 0.1 else 1.0)
+	else:
+		$Visual.modulate = Color.WHITE
 
 # -----------------------------------------------------------------------------
 # take_damage(amount)
-# Fonction PUBLIQUE : appelée par d'autres scripts pour blesser le joueur.
-# "Public" = accessible depuis n'importe quel autre script.
+# Fonction publique : appelée par d'autres scripts pour blesser le joueur.
 # -----------------------------------------------------------------------------
 func take_damage(amount: int) -> void:
-	# Si le joueur est déjà invincible, on ignore le coup
 	if is_invincible:
 		return
-	
-	# Si le joueur est en train de faire un dash, il est intangible
-	if is_dashing:
+	# Intangible pendant les deux types de dash
+	if is_dashing or is_attack_dashing:
 		return
 
 	health -= amount
-
-	# On déclenche l'invincibilité
 	is_invincible = true
 	invincible_timer = INVINCIBLE_DURATION
 
 	print("Joueur PV : %d / %d" % [health, max_health])
-	
-	# Mettre à jour la barre de vie
 	_update_health_bar()
 
-	# Si les PV tombent à 0 ou moins → mort
 	if health <= 0:
 		_die()
 
 # -----------------------------------------------------------------------------
 # _die()
-# Fonction PRIVÉE (préfixe "_") : ne devrait pas être appelée depuis l'extérieur.
 # -----------------------------------------------------------------------------
 func _die() -> void:
-	# On charge l'écran de défaite.
-	# change_scene_to_file() remplace toute la scène actuelle par game_over.tscn.
 	get_tree().change_scene_to_file("res://scenes/menus/game_over.tscn")
 
 # -----------------------------------------------------------------------------
 # _update_health_bar()
-# Met à jour la barre de vie en fonction des PV actuels du joueur
 # -----------------------------------------------------------------------------
 func _update_health_bar() -> void:
 	$HealthBar.max_value = max_health
 	$HealthBar.value = health
 
 # -----------------------------------------------------------------------------
-# _handle_attack(delta)
-# Gère le système d'attaque : détection du clic, positionnement de la hitbox
-# vers la souris, et timer d'activation.
+# _handle_attack_dash(delta)
+# Gère la progression du dash d'attaque (mouvement + hitbox active)
 # -----------------------------------------------------------------------------
-func _handle_attack(delta: float) -> void:
-	# Décrémenter le cooldown de l'attaque si nécessaire
-	if attack_cooldown_timer > 0.0:
-		attack_cooldown_timer -= delta
-	
-	# Si on est en train d'attaquer, on décrémente le timer
-	if is_attacking:
-		attack_timer -= delta
-		if attack_timer <= 0.0:
-			# L'attaque est terminée, on désactive la hitbox
-			is_attacking = false
-			$AttackArea.monitoring = false
-			$AttackArea/AttackVisual.visible = false
+func _handle_attack_dash(delta: float) -> void:
+	if attack_dash_cooldown_timer > 0.0:
+		attack_dash_cooldown_timer -= delta
+
+	if not is_attack_dashing:
 		return
-	
-	# Détection du clic gauche pour lancer une attaque
-	# On vérifie que le cooldown est écoulé avant de permettre une nouvelle attaque
-	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not is_attacking and attack_cooldown_timer <= 0.0:
-		# Calculer la direction vers la souris
-		var mouse_pos := get_global_mouse_position()
-		var direction := (mouse_pos - global_position).normalized()
-		
-		# Positionner la hitbox d'attaque (grande sphère jaune) dans cette direction
-		$AttackArea.position = direction * ATTACK_DISTANCE
-		
-		# Activer l'attaque
-		is_attacking = true
-		attack_timer = ATTACK_DURATION
-		$AttackArea.monitoring = true
-		$AttackArea/AttackVisual.visible = true
-		
-		# Réinitialiser le cooldown de l'attaque
-		attack_cooldown_timer = ATTACK_COOLDOWN
+
+	attack_dash_timer -= delta
+
+	if attack_dash_timer > 0.0:
+		velocity = attack_dash_direction * ATTACK_DASH_SPEED
+		move_and_slide()
+		if animated_sprite.animation != "walk":
+			animated_sprite.play("walk")
+		# Orienter le sprite dans la direction du dash
+		if attack_dash_direction.x < 0:
+			animated_sprite.flip_h = true
+		elif attack_dash_direction.x > 0:
+			animated_sprite.flip_h = false
+	else:
+		# Le dash s'est terminé sans toucher d'ennemi
+		_end_attack_dash()
+
+# -----------------------------------------------------------------------------
+# _start_attack_dash(direction)
+# Lance l'attaque-dash dans la direction donnée
+# -----------------------------------------------------------------------------
+func _start_attack_dash(direction: Vector2) -> void:
+	is_attack_dashing = true
+	attack_dash_timer = ATTACK_DASH_DURATION
+	attack_dash_direction = direction
+	attack_dash_cooldown_timer = ATTACK_DASH_COOLDOWN
+	# Hitbox positionnée légèrement en avant du joueur
+	$AttackArea.position = direction * 16.0
+	$AttackArea.monitoring = true
+	$AttackArea/AttackVisual.visible = true
+
+# -----------------------------------------------------------------------------
+# _end_attack_dash()
+# Stoppe l'attaque-dash et désactive la hitbox
+# -----------------------------------------------------------------------------
+func _end_attack_dash() -> void:
+	is_attack_dashing = false
+	$AttackArea.monitoring = false
+	$AttackArea/AttackVisual.visible = false
 
 # -----------------------------------------------------------------------------
 # _on_attack_hit(body)
-# Appelée quand la hitbox d'attaque touche un ennemi
+# Appelée quand la hitbox touche un corps pendant l'attaque-dash.
+# Inflige des dégâts, puis applique un knockback + stun au joueur.
 # -----------------------------------------------------------------------------
 func _on_attack_hit(body: Node2D) -> void:
-	# Vérifier que c'est bien un ennemi et qu'il a une méthode take_damage
-	if body.is_in_group("enemy") and body.has_method("take_damage"):
-		body.take_damage(ATTACK_DAMAGE)
-		print("Ennemi touché !")
+	if not body.is_in_group("enemy") or not body.has_method("take_damage"):
+		return
+	if not is_attack_dashing:
+		return
+
+	body.take_damage(ATTACK_DAMAGE)
+	print("Ennemi touché par l'attaque-dash !")
+
+	# Direction de rebond : s'éloigner de l'ennemi touché
+	var knockback_dir := (global_position - body.global_position).normalized()
+	if knockback_dir == Vector2.ZERO:
+		knockback_dir = -attack_dash_direction
+
+	# Stopper le dash et appliquer le stun + knockback
+	_end_attack_dash()
+	knockback_velocity = knockback_dir * PLAYER_KNOCKBACK_SPEED
+	knockback_timer = PLAYER_KNOCKBACK_DURATION
+	is_stunned = true
+	stun_timer = PLAYER_STUN_DURATION
+
+# -----------------------------------------------------------------------------
+# _handle_stun(delta)
+# Gère le stun et le knockback du joueur après un impact ennemi.
+# Pendant le stun, le joueur ne peut ni bouger ni attaquer.
+# -----------------------------------------------------------------------------
+func _handle_stun(delta: float) -> void:
+	if not is_stunned:
+		return
+
+	stun_timer -= delta
+
+	# Appliquer le knockback pendant sa durée, puis immobiliser
+	if knockback_timer > 0.0:
+		knockback_timer -= delta
+		velocity = knockback_velocity
+		move_and_slide()
+	else:
+		velocity = Vector2.ZERO
+
+	if stun_timer <= 0.0:
+		is_stunned = false
 
 # -----------------------------------------------------------------------------
 # _handle_dash(delta)
-# Gère le système de dash : durée du dash et cooldown
+# Gère le dash de déplacement (touche configurable dans Settings)
 # -----------------------------------------------------------------------------
 func _handle_dash(delta: float) -> void:
-	# Si le joueur n'est pas en train de faire un dash, on gère juste le cooldown
 	if not is_dashing:
 		if dash_cooldown_timer > 0.0:
 			dash_cooldown_timer -= delta
 		return
-	
-	# On décrémente le timer du dash
+
 	dash_timer -= delta
-	
+
 	if dash_timer > 0.0:
-		# On continue le dash : déplacement rapide dans la direction du dash
 		velocity = dash_direction * DASH_SPEED
 		move_and_slide()
-		# Animation de marche pendant le dash
 		if animated_sprite.animation != "walk":
 			animated_sprite.play("walk")
-		# Clignotement léger pour indiquer l'intangibilité
-		$Visual.modulate.a = 0.6 if fmod(dash_timer, 0.15) < 0.075 else 1.0
 	else:
-		# Le dash est terminé
 		is_dashing = false
 		dash_cooldown_timer = DASH_COOLDOWN
-		$Visual.modulate.a = 1.0  # On remet la couleur opaque
 
 # -----------------------------------------------------------------------------
 # _start_dash()
-# Lance un nouveau dash dans la direction actuelle du joueur
+# Lance un dash de déplacement dans la direction actuelle du joueur
 # -----------------------------------------------------------------------------
 func _start_dash() -> void:
 	is_dashing = true
 	dash_timer = DASH_DURATION
-	# On utilise la direction actuelle du joueur pour le dash
 	dash_direction = facing_direction if facing_direction != Vector2.ZERO else Vector2.DOWN
 	print("Dash lancé dans la direction : ", dash_direction)
