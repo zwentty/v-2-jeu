@@ -10,6 +10,8 @@ extends Area2D
 # === VARIABLES ===
 var direction: Vector2 = Vector2.RIGHT  # Direction du déplacement
 var _lifetime_timer: float = 0.0        # Timer interne pour la durée de vie
+# "enemy" → touche le joueur | "player" → touche les ennemis
+var source: String = "enemy"
 
 func _ready() -> void:
 	# Connecter le signal de collision
@@ -32,12 +34,20 @@ func set_direction(dir: Vector2) -> void:
 	direction = dir.normalized()
 	rotation = direction.angle()
 
-# Collision avec un corps (joueur ou mur)
+# Collision avec un corps
 func _on_body_entered(body: Node2D) -> void:
-	if body.is_in_group("player"):
-		# Infliger des dégâts au joueur
-		if body.has_method("take_damage"):
-			body.take_damage(damage)
-	
-	# Détruire le projectile dans tous les cas (mur ou joueur)
-	queue_free()
+	if source == "player":
+		# Projectile du joueur : touche uniquement les ennemis
+		if body.is_in_group("enemy"):
+			if body.has_method("take_damage"):
+				body.take_damage(damage)
+			queue_free()
+		elif not body.is_in_group("player"):
+			# Mur ou obstacle
+			queue_free()
+	else:
+		# Projectile ennemi : comportement original (touche le joueur)
+		if body.is_in_group("player"):
+			if body.has_method("take_damage"):
+				body.take_damage(damage)
+		queue_free()
