@@ -5,6 +5,8 @@
 
 extends CharacterBody2D
 
+const PROJECTILE_SCENE = preload("res://scenes/projectile/projectile.tscn")
+
 # -----------------------------------------------------------------------------
 # CONSTANTES
 # -----------------------------------------------------------------------------
@@ -27,6 +29,11 @@ const PLAYER_STUN_DURATION = 0.8
 const DASH_SPEED = 600.0
 const DASH_DURATION = 0.3
 const DASH_COOLDOWN = 0.8
+
+# Projectile lancé par le joueur (clic droit)
+const PLAYER_PROJECTILE_SPEED   = 500.0
+const PLAYER_PROJECTILE_DAMAGE  = 1
+const PLAYER_PROJECTILE_COOLDOWN = 0.5
 
 # -----------------------------------------------------------------------------
 # VARIABLES D'ÉTAT
@@ -57,6 +64,9 @@ var knockback_timer: float = 0.0
 
 var facing_direction: Vector2 = Vector2.DOWN
 var inventory: Control = null
+
+# Projectile du joueur
+var projectile_cooldown_timer: float = 0.0
 
 @onready var animated_sprite: AnimatedSprite2D = $Visual
 
@@ -93,6 +103,8 @@ func _physics_process(delta: float) -> void:
 		_handle_movement()
 	_handle_invincibility(delta)
 	_update_visual()
+	if projectile_cooldown_timer > 0.0:
+		projectile_cooldown_timer -= delta
 
 # -----------------------------------------------------------------------------
 # _unhandled_input(event)
@@ -106,6 +118,17 @@ func _unhandled_input(event: InputEvent) -> void:
 			if direction == Vector2.ZERO:
 				direction = facing_direction
 			_start_attack_dash(direction)
+			get_viewport().set_input_as_handled()
+		return
+
+	# Tir de projectile sur clic droit
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		if not is_stunned and projectile_cooldown_timer <= 0.0:
+			var mouse_pos := get_global_mouse_position()
+			var dir := (mouse_pos - global_position).normalized()
+			if dir == Vector2.ZERO:
+				dir = facing_direction
+			_fire_projectile(dir)
 			get_viewport().set_input_as_handled()
 		return
 
@@ -352,3 +375,19 @@ func _start_dash() -> void:
 	dash_timer = DASH_DURATION
 	dash_direction = facing_direction if facing_direction != Vector2.ZERO else Vector2.DOWN
 	print("Dash lancé dans la direction : ", dash_direction)
+
+# -----------------------------------------------------------------------------
+# _fire_projectile(direction)
+# Instancie un projectile orienté vers la souris, marqué comme source "player"
+# -----------------------------------------------------------------------------
+func _fire_projectile(direction: Vector2) -> void:
+	var projectile = PROJECTILE_SCENE.instantiate()
+	projectile.source = "player"
+	projectile.speed = PLAYER_PROJECTILE_SPEED
+	projectile.damage = PLAYER_PROJECTILE_DAMAGE
+	# Mask 6 = layer 2 (murs) + layer 4 (ennemis), au lieu du mask ennemi qui cible layer 1 (joueur)
+	projectile.collision_mask = 6
+	projectile.global_position = global_position
+	projectile.set_direction(direction)
+	get_tree().current_scene.add_child(projectile)
+	projectile_cooldown_timer = PLAYER_PROJECTILE_COOLDOWN
