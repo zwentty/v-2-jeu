@@ -49,12 +49,16 @@ radius = 25.0
 ; Type CharacterBody2D : permet les déplacements avec move_and_slide()
 ;                        et les collisions physiques avec l'environnement
 ; 
-; collision_layer = 4 : L'ennemi EXISTE sur la couche 4
+; collision_layer = 4 : L'ennemi EXISTE sur la couche 3 (valeur 4)
 ;                       (Les autres objets peuvent le détecter sur cette couche)
-; 
-; collision_mask = 6 : L'ennemi DÉTECTE les couches 2 et 4
+;
+; collision_mask = 6 : L'ennemi DÉTECTE les couches 2 et 3
 ;                      Couche 2 = Murs/obstacles (pour ne pas les traverser)
-;                      Couche 4 = Autres ennemis (pour la collision physique entre eux)
+;                      Couche 3 = Autres ennemis (pour la collision physique entre eux)
+;                      NOTE : la couche 1 (joueur) est volontairement EXCLUE. La
+;                      collision joueur<->ennemi est à sens unique (seul le joueur
+;                      la résout) pour éviter le tremblement d'accrochage et pour
+;                      laisser le dash du joueur traverser proprement l'ennemi.
 ; =============================================================================
 [node name="Enemy" type="CharacterBody2D" unique_id=539699614]
 collision_layer = 4

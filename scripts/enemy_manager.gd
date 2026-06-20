@@ -4,13 +4,10 @@ extends Node
 
 # === ÉNUMÉRATION DES RÔLES ===
 enum Role {
-	INTERCEPT,      # Ennemi qui intercepte devant le joueur
-	FLANK_LEFT,     # Ennemi qui flanque à gauche
-	FLANK_RIGHT,    # Ennemi qui flanque à droite
-	CHASE,          # Ennemi qui poursuit derrière
-	SURROUND_LEFT,  # Triangulation : position gauche
-	SURROUND_RIGHT, # Triangulation : position droite
-	SURROUND_BACK   # Triangulation : position arrière
+	INTERCEPT,   # Ennemi qui intercepte devant le joueur
+	FLANK_LEFT,  # Ennemi qui flanque à gauche
+	FLANK_RIGHT, # Ennemi qui flanque à droite
+	CHASE        # Ennemi qui poursuit derrière
 }
 
 # === CONSTANTES DE CONFIGURATION ===
@@ -132,40 +129,37 @@ func _activate_room2() -> void:
 func _reassign_ranged_roles() -> void:
 	if _ranged_enemies.size() == 0 or _player == null:
 		return
-	
-	# Filtrer les ennemis à distance engagés (ENGAGE ou ATTACK)
+
 	var engaged_ranged = _get_engaged_ranged_enemies()
 	if engaged_ranged.size() == 0:
 		return
-	
+
 	var player_pos = _player.global_position
-	
-	# Positionner les ennemis en cercle autour du joueur à leur distance optimale
-	var angle_step = TAU / engaged_ranged.size()  # TAU = 2*PI, répartition uniforme
-	
-	# Trier les ennemis par angle actuel pour minimiser les croisements
-	var enemies_with_angles = []
+	var count = engaged_ranged.size()
+	var angle_step = TAU / count
+
+	# Slots disponibles : indices 0..count-1, chacun correspond à un angle sur le cercle
+	var available_slots: Array[int] = []
+	for i in range(count):
+		available_slots.append(i)
+
+	# Chaque ennemi prend le slot libre dont l'angle est le plus proche de sa position actuelle
 	for enemy in engaged_ranged:
 		var to_enemy = enemy.global_position - player_pos
 		var current_angle = atan2(to_enemy.y, to_enemy.x)
-		enemies_with_angles.append({"enemy": enemy, "angle": current_angle})
-	
-	# Trier par angle croissant
-	enemies_with_angles.sort_custom(func(a, b): return a.angle < b.angle)
-	
-	for i in range(enemies_with_angles.size()):
-		var enemy = enemies_with_angles[i].enemy
-		var optimal_dist = enemy.optimal_distance  # Distance optimale de l'ennemi
-		
-		# Calculer l'angle cible pour cet ennemi (répartition uniforme)
-		var angle = angle_step * i
-		
-		# Position cible sur le cercle
-		var offset = Vector2(cos(angle), sin(angle)) * optimal_dist
-		var target_pos = player_pos + offset
-		
-		# Assigner la position cible
-		_target_positions[enemy.get_instance_id()] = target_pos
+
+		var best_slot := available_slots[0]
+		var best_diff := INF
+		for slot in available_slots:
+			var diff = abs(angle_difference(current_angle, angle_step * slot))
+			if diff < best_diff:
+				best_diff = diff
+				best_slot = slot
+
+		available_slots.erase(best_slot)
+
+		var offset = Vector2(cos(angle_step * best_slot), sin(angle_step * best_slot)) * enemy.optimal_distance
+		_target_positions[enemy.get_instance_id()] = player_pos + offset
 
 # Retourne la liste des ennemis à distance engagés (ENGAGE ou ATTACK uniquement)
 func _get_engaged_ranged_enemies() -> Array:
@@ -249,29 +243,6 @@ func _apply_direct_pursuit(engaged: Array[Node], target_pos: Vector2) -> void:
 		_roles[enemy.get_instance_id()] = Role.INTERCEPT
 		_target_positions[enemy.get_instance_id()] = target_pos
 		enemy.set_meta("assigned", true)
-
-# STRATÉGIE 3 ENNEMIS : Triangulation autour du joueur
-func _apply_triangle_formation(engaged: Array[Node], target_pos: Vector2, player_dir: Vector2) -> void:
-	# 1. Assigner l'ennemi qui poursuit par derrière (CHASE)
-	var chase_pos = target_pos - player_dir * CHASE_DISTANCE
-	var chase_enemy = _find_nearest_unassigned(engaged, chase_pos)
-	
-	if chase_enemy:
-		_roles[chase_enemy.get_instance_id()] = Role.SURROUND_BACK
-		_target_positions[chase_enemy.get_instance_id()] = chase_pos
-		chase_enemy.set_meta("assigned", true)
-		
-		# 2. Calculer la direction entre le joueur et l'ennemi CHASE
-		var chase_to_player = chase_enemy.global_position.direction_to(target_pos)
-		
-		# 3. Positionner les deux autres ennemis à gauche et droite pour intercepter (120° au lieu de 90°)
-		var positions = {
-			Role.SURROUND_LEFT: target_pos + chase_to_player.rotated(-2.0 * PI / 3.0) * FLANK_DISTANCE,   # 120° à gauche
-			Role.SURROUND_RIGHT: target_pos + chase_to_player.rotated(2.0 * PI / 3.0) * FLANK_DISTANCE,   # 120° à droite
-		}
-		
-		for role in [Role.SURROUND_LEFT, Role.SURROUND_RIGHT]:
-			_assign_best_enemy_from_list(role, positions[role], engaged)
 
 # STRATÉGIE 4+ ENNEMIS : Tactiques avancées avec rôles fixes
 func _apply_advanced_tactics(engaged: Array[Node], target_pos: Vector2, player_dir: Vector2) -> void:

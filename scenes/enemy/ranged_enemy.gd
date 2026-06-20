@@ -24,6 +24,7 @@ func _ready() -> void:
 	drop_nom = "Âme de Slime"
 	drop_couleur = Color.BLACK
 	drop_polygone = PackedVector2Array([Vector2(-20, -20), Vector2(20, -20), Vector2(20, 20), Vector2(-20, 20)])
+	debug_path_color = Color(0.0, 0.75, 1.0, 0.85)  # cyan pour les ennemis à distance
 	super._ready()
 	state = State.PATROL
 

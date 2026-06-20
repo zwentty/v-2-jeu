@@ -32,6 +32,7 @@ var patrol_arrive_distance: float = 20.0
 var patrol_wait_min: float = 2.0
 var patrol_wait_max: float = 2.0
 var max_health: int = 0
+var debug_path_color: Color = Color(1.0, 0.5, 0.0, 0.85)  # orange (mêlée par défaut)
 
 # Drop à la mort — à renseigner dans _ready() de la sous-classe
 var drop_nom: String = ""
@@ -60,6 +61,10 @@ func _ready() -> void:
 	nav_agent.max_speed = move_speed
 	nav_agent.avoidance_enabled = true
 	nav_agent.velocity_computed.connect(_on_velocity_computed)
+	nav_agent.debug_enabled = true
+	nav_agent.debug_use_custom = true
+	nav_agent.debug_path_custom_color = debug_path_color
+	nav_agent.debug_path_custom_point_size = 6.0
 
 	EnemyManager.register(self)
 	detection_area.body_entered.connect(_on_player_detected)

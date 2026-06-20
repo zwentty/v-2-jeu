@@ -263,6 +263,14 @@ func _handle_attack_dash(delta: float) -> void:
 	if attack_dash_timer > 0.0:
 		velocity = attack_dash_direction * ATTACK_DASH_SPEED
 		move_and_slide()
+		# Détecte les ennemis DÉJÀ en contact avec la hitbox. Le signal body_entered
+		# ne se déclenche que sur une transition extérieur->intérieur : si un ennemi
+		# chevauchait déjà la hitbox au lancement de l'attaque (cas « collé »), il ne
+		# serait jamais touché. On vérifie donc explicitement les chevauchements.
+		for body in $AttackArea.get_overlapping_bodies():
+			_on_attack_hit(body)
+			if not is_attack_dashing:
+				return  # _on_attack_hit a terminé le dash après un coup réussi
 		if animated_sprite.animation != "walk":
 			animated_sprite.play("walk")
 		# Orienter le sprite dans la direction du dash
@@ -365,6 +373,7 @@ func _handle_dash(delta: float) -> void:
 	else:
 		is_dashing = false
 		dash_cooldown_timer = DASH_COOLDOWN
+		set_collision_mask_value(3, true)  # restaure la collision avec les ennemis
 
 # -----------------------------------------------------------------------------
 # _start_dash()
@@ -374,6 +383,7 @@ func _start_dash() -> void:
 	is_dashing = true
 	dash_timer = DASH_DURATION
 	dash_direction = facing_direction if facing_direction != Vector2.ZERO else Vector2.DOWN
+	set_collision_mask_value(3, false)  # traverse les ennemis pendant le dash
 	print("Dash lancé dans la direction : ", dash_direction)
 
 # -----------------------------------------------------------------------------

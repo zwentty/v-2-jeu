@@ -1,34 +1,9 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene format=3 uid="uid://dxfaewnxhoqg"]
 
-; -----------------------------------------------------------------------
-; SECTION DES RESSOURCES EXTERNES
-; "ext_resource" = fichier externe chargé dans cette scène.
-; -----------------------------------------------------------------------
+[ext_resource type="Script" uid="uid://dilvcdi6yqj0e" path="res://scenes/player/player.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://cfrtaj87vpxgb" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Idle-Sheet.png" id="2"]
+[ext_resource type="Texture2D" uid="uid://b5j1vcir5ebxu" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Walk-Sheet.png" id="3"]
 
-; On charge le script player.gd. Il sera attaché au nœud racine.
-; "id=1" est juste un identifiant interne pour que les noeuds puissent y référer.
-[ext_resource type="Script" path="res://scenes/player/player.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://pftqrsgfjsj6" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Idle-Sheet.png" id="2"]
-[ext_resource type="Texture2D" uid="uid://b28whw6g5chq0" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Walk-Sheet.png" id="3"]
-
-; -----------------------------------------------------------------------
-; SECTION DES SOUS-RESSOURCES (ressources inline, sans fichier séparé)
-; -----------------------------------------------------------------------
-
-; CircleShape2D : forme de collision RONDE pour le joueur.
-; POURQUOI un cercle et pas un rectangle ?
-; → Un rectangle a des "coins" qui s'accrochent aux murs quand on glisse
-;   le long d'un bord (bug de collage). Un cercle n'a pas de coins,
-;   il glisse parfaitement sur tous les angles.
-; radius = 14 pixels → légèrement plus petit que le carré visuel (16px)
-;   pour donner un feeling "généreux" aux collisions (erreur pardonnée).
-[sub_resource type="CircleShape2D" id="1"]
-radius = 14.0
-
-[sub_resource type="CircleShape2D" id="2"]
-radius = 30.0
-
-; Configuration des frames pour l'animation Idle
 [sub_resource type="AtlasTexture" id="idle_0"]
 atlas = ExtResource("2")
 region = Rect2(0, 0, 96, 96)
@@ -45,7 +20,6 @@ region = Rect2(192, 0, 96, 96)
 atlas = ExtResource("2")
 region = Rect2(288, 0, 96, 96)
 
-; Configuration des frames pour l'animation Walk
 [sub_resource type="AtlasTexture" id="walk_0"]
 atlas = ExtResource("3")
 region = Rect2(0, 0, 96, 96)
@@ -70,7 +44,6 @@ region = Rect2(384, 0, 96, 96)
 atlas = ExtResource("3")
 region = Rect2(480, 0, 96, 96)
 
-; SpriteFrames : ressource qui contient toutes les animations
 [sub_resource type="SpriteFrames" id="spriteframes"]
 animations = [{
 "frames": [{
@@ -114,41 +87,26 @@ animations = [{
 "speed": 10.0
 }]
 
-; -----------------------------------------------------------------------
-; SECTION DES NOEUDS
-; Chaque [node] représente un nœud dans l'arbre de scène.
-; "parent=." signifie que le nœud est enfant de la racine.
-; "parent="Visual"" signifie enfant du nœud nommé "Visual".
-; -----------------------------------------------------------------------
+[sub_resource type="CircleShape2D" id="1"]
+radius = 14.0
 
-; --- NOEUD RACINE ---
-; CharacterBody2D : nœud de physique 2D pour les personnages contrôlés.
-; C'est différent de RigidBody2D (physique simulée) : ici ON contrôle
-; la vélocité manuellement dans le script.
-; "script = ExtResource("1")" attache player.gd à ce nœud.
-[node name="Player" type="CharacterBody2D"]
-collision_layer = 1
-collision_mask = 2
+[sub_resource type="CircleShape2D" id="2"]
+radius = 30.0
+
+[node name="Player" type="CharacterBody2D" unique_id=1916813690]
+collision_mask = 6
 script = ExtResource("1")
 
-; --- REPRÉSENTATION VISUELLE ---
-; AnimatedSprite2D : affiche des animations à partir de spritesheets
-; Remplace l'ancien Polygon2D temporaire
-; texture_filter = 1 → NEAREST (pas de flou, rendu pixel art net)
-; scale = 1.5 → agrandi à 150% (144x144 pixels)
-[node name="Visual" type="AnimatedSprite2D" parent="."]
+[node name="Visual" type="AnimatedSprite2D" parent="." unique_id=2059424465]
 texture_filter = 1
+position = Vector2(1, -17)
+scale = Vector2(1.5, 1.5)
 sprite_frames = SubResource("spriteframes")
 animation = &"idle"
 autoplay = "idle"
-frame = 0
-frame_progress = 0.0
 offset = Vector2(0, 8)
-scale = Vector2(1.5, 1.5)
 
-; --- BARRE DE VIE ---
-; ProgressBar : affiche les PV du joueur sous forme de barre
-[node name="HealthBar" type="ProgressBar" parent="."]
+[node name="HealthBar" type="ProgressBar" parent="." unique_id=400132790]
 offset_left = -30.0
 offset_top = -35.0
 offset_right = 30.0
@@ -156,34 +114,23 @@ offset_bottom = -25.0
 value = 100.0
 show_percentage = false
 
-; --- COLLISION ---
-; CollisionShape2D : nœud qui applique une forme de collision au CharacterBody2D.
-; Sans ce nœud, le joueur passerait à travers tous les murs.
-; "shape = SubResource("1")" utilise le CircleShape2D défini plus haut.
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1894520657]
 shape = SubResource("1")
 
-[node name="AttackArea" type="Area2D" parent="."]
+[node name="AttackArea" type="Area2D" parent="." unique_id=1520172084]
 collision_layer = 0
 collision_mask = 4
 monitoring = false
 
-[node name="AttackShape" type="CollisionShape2D" parent="AttackArea"]
+[node name="AttackShape" type="CollisionShape2D" parent="AttackArea" unique_id=1961488372]
 shape = SubResource("2")
 
-[node name="AttackVisual" type="Polygon2D" parent="AttackArea"]
+[node name="AttackVisual" type="Polygon2D" parent="AttackArea" unique_id=1142667388]
 visible = false
 color = Color(1, 0.9, 0, 0.7)
 polygon = PackedVector2Array(30, 0, 29.4, 5.9, 27.7, 11.5, 25, 16.8, 21.2, 21.2, 16.8, 25, 11.5, 27.7, 5.9, 29.4, 0, 30, -5.9, 29.4, -11.5, 27.7, -16.8, 25, -21.2, 21.2, -25, 16.8, -27.7, 11.5, -29.4, 5.9, -30, 0, -29.4, -5.9, -27.7, -11.5, -25, -16.8, -21.2, -21.2, -16.8, -25, -11.5, -27.7, -5.9, -29.4, 0, -30, 5.9, -29.4, 11.5, -27.7, 16.8, -25, 21.2, -21.2, 25, -16.8, 27.7, -11.5, 29.4, -5.9)
 
-; --- CAMÉRA ---
-; Camera2D : suit automatiquement le nœud Player (car elle est son enfant).
-; Elle est attachée au joueur, donc elle bouge avec lui.
-;
-; limit_left/top = 0 → la caméra ne montrera jamais à gauche/au-dessus du bord 0,0
-; limit_right = 2560, limit_bottom = 1440 → taille totale de la carte
-;   La caméra s'arrête aux bords de la carte et ne montre pas l'extérieur.
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1041713644]
 limit_left = -100
 limit_top = -100
 limit_right = 5000

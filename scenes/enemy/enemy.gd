@@ -93,9 +93,16 @@ func _state_engage(_delta: float) -> void:
 
 	var dist = global_position.distance_to(player.global_position)
 
-	if dist < ATTACK_DISTANCE and attack_timer <= 0 and EnemyManager.can_attack(self):
-		state = State.ATTACK
-		windup_timer = attack_windup
+	if dist < ATTACK_DISTANCE:
+		if attack_timer <= 0 and EnemyManager.can_attack(self):
+			state = State.ATTACK
+			windup_timer = attack_windup
+			return
+		# À portée mais cooldown actif — on s'arrête pour éviter de s'accrocher au joueur
+		velocity = Vector2.ZERO
+		nav_agent.set_velocity(Vector2.ZERO)
+		move_and_slide()
+		_face_player()
 		return
 
 	var target = EnemyManager.get_target_position(self)
