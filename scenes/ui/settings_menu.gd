@@ -21,7 +21,9 @@ func _ready() -> void:
 	$Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/MoveRightButton.pressed.connect(_on_key_button_pressed.bind($Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/MoveRightButton, "move_right"))
 	$Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/InventoryButton.pressed.connect(_on_key_button_pressed.bind($Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/InventoryButton, "inventory"))
 	$Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/PickupButton.pressed.connect(_on_key_button_pressed.bind($Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/PickupButton, "pickup"))
-	
+	$Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/CompetenceButton.pressed.connect(_on_key_button_pressed.bind($Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/CompetenceButton, "competence"))
+	$Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/AttaqueButton.pressed.connect(_on_key_button_pressed.bind($Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/AttaqueButton, "attaque"))
+
 	# Charger les paramètres actuels
 	_load_settings()
 
@@ -45,6 +47,8 @@ func _update_key_labels() -> void:
 	$Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/MoveRightButton.text = "Droite: %s" % _get_key_name(Settings.key_move_right)
 	$Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/InventoryButton.text = "Inventaire: %s" % _get_key_name(Settings.key_inventory)
 	$Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/PickupButton.text = "Ramasser: %s" % _get_key_name(Settings.key_pickup)
+	$Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/CompetenceButton.text = "Compétence: %s" % Settings.binding_display_name(Settings.competence_binding)
+	$Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection/AttaqueButton.text = "Attaque: %s" % Settings.binding_display_name(Settings.attaque_binding)
 
 func _get_key_name(keycode: int) -> String:
 	return OS.get_keycode_string(keycode)
@@ -59,11 +63,31 @@ func _on_key_button_pressed(button: Button, _action: String) -> void:
 	button.text = "Appuyez sur une touche..."
 
 func _input(event: InputEvent) -> void:
-	if awaiting_input_button and event is InputEventKey and event.pressed and not event.echo:
+	if not awaiting_input_button:
+		return
+
+	var button_name: String = awaiting_input_button.name
+
+	# Compétence et Attaque acceptent une touche clavier OU un bouton souris
+	if button_name == "CompetenceButton" or button_name == "AttaqueButton":
+		var is_key: bool = event is InputEventKey and not event.echo
+		var is_mouse: bool = event is InputEventMouseButton
+		if (is_key or is_mouse) and event.pressed:
+			var binding: Dictionary = Settings.binding_from_event(event)
+			if button_name == "CompetenceButton":
+				Settings.competence_binding = binding
+			else:
+				Settings.attaque_binding = binding
+			Settings.save_settings()
+			_update_key_labels()
+			awaiting_input_button = null
+			get_viewport().set_input_as_handled()
+		return
+
+	# Les autres actions n'acceptent que des touches clavier
+	if event is InputEventKey and event.pressed and not event.echo:
 		var keycode: int = event.keycode
-		
-		# Mettre à jour la touche dans Settings
-		match awaiting_input_button.name:
+		match button_name:
 			"MoveUpButton":
 				Settings.key_move_up = keycode
 			"MoveLeftButton":
@@ -76,7 +100,7 @@ func _input(event: InputEvent) -> void:
 				Settings.key_inventory = keycode
 			"PickupButton":
 				Settings.key_pickup = keycode
-		
+
 		Settings.save_settings()
 		_update_key_labels()
 		awaiting_input_button = null

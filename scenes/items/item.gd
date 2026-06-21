@@ -17,7 +17,11 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 
-	$Label.text = OS.get_keycode_string(Settings.key_pickup)
+	# Les âmes se ramassent avec la touche/clic « compétence », les autres objets avec la touche « ramasser »
+	if est_ame():
+		$Label.text = Settings.binding_display_name(Settings.competence_binding)
+	else:
+		$Label.text = OS.get_keycode_string(Settings.key_pickup)
 
 	$Visual.color = item_color
 	if item_polygon.size() > 0:
@@ -49,6 +53,11 @@ func _on_body_exited(body: Node2D) -> void:
 	if body.is_in_group("player"):
 		player_nearby = false
 		$Label.visible = false
+
+# Indique si cet objet est une âme (drop d'ennemi).
+# Les âmes ont un nom commençant par « Âme » et se ramassent avec la touche espace.
+func est_ame() -> bool:
+	return item_name.begins_with("Âme")
 
 # Fonction appelée par le joueur pour ramasser l'objet
 func pickup() -> String:
