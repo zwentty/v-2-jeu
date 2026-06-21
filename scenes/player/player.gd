@@ -18,7 +18,7 @@ const INVINCIBLE_DURATION = 1.0
 const ATTACK_DASH_SPEED = 500.0
 const ATTACK_DASH_DURATION = 0.30
 const ATTACK_DASH_COOLDOWN = 1.2
-const ATTACK_DAMAGE = 1
+const ATTACK_DAMAGE = 3
 
 # Knockback + stun infligés au joueur après avoir touché un ennemi
 const PLAYER_KNOCKBACK_SPEED = 300.0
@@ -32,7 +32,7 @@ const DASH_COOLDOWN = 0.8
 
 # Projectile lancé par le joueur (clic droit)
 const PLAYER_PROJECTILE_SPEED   = 500.0
-const PLAYER_PROJECTILE_DAMAGE  = 1
+const PLAYER_PROJECTILE_DAMAGE  = 3
 const PLAYER_PROJECTILE_COOLDOWN = 0.5
 
 # -----------------------------------------------------------------------------
