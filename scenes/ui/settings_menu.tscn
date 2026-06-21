@@ -132,6 +132,16 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Ramasser: E"
 
+[node name="CompetenceButton" type="Button" parent="Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Compétence: Space"
+
+[node name="AttaqueButton" type="Button" parent="Panel/VBoxContainer/ScrollContainer/VBoxContainer/KeysSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Attaque: Clic gauche"
+
 [node name="CloseButton" type="Button" parent="Panel/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)

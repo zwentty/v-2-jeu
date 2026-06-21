@@ -10,5 +10,9 @@ func _ready() -> void:
 	$CenterContainer/VBoxContainer/BoutonRejouer.pressed.connect(_on_rejouer_pressed)
 
 func _on_rejouer_pressed() -> void:
-	# On recharge world.tscn pour recommencer une nouvelle partie.
-	get_tree().change_scene_to_file("res://scenes/world/world.tscn")
+	# Nouvelle partie : on réinitialise l'état sauvegardé (vie + inventaire).
+	var gs := get_node_or_null("/root/GameState")
+	if gs != null:
+		gs.reset()
+	# On recharge la première salle pour recommencer.
+	get_tree().change_scene_to_file("res://scenes/world/salle_1.tscn")

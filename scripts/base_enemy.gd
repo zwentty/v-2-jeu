@@ -23,9 +23,11 @@ var facing_direction: Vector2 = Vector2.RIGHT
 var patrol_target: Vector2 = Vector2.ZERO
 var patrol_timer: float = 0.0
 var windup_timer: float = 0.0
-var room_number: int = 1
+# Bornes de la salle (lues depuis le nœud racine de la salle au _ready).
 var room_min_x: float = 0.0
 var room_max_x: float = 2560.0
+var room_min_y: float = 0.0
+var room_max_y: float = 1440.0
 
 # Configurables par les sous-classes avant super._ready()
 var patrol_arrive_distance: float = 20.0
@@ -44,14 +46,14 @@ var drop_polygone: PackedVector2Array = PackedVector2Array()
 func _ready() -> void:
 	add_to_group("enemy")
 
-	if global_position.x < 2560.0:
-		room_number = 1
-		room_min_x = 0.0
-		room_max_x = 2560.0
-	else:
-		room_number = 2
-		room_min_x = 2560.0
-		room_max_x = 5120.0
+	# Lire les bornes de la salle depuis son nœud racine (groupe "room").
+	var room := get_tree().get_first_node_in_group("room")
+	if room != null and "play_area" in room:
+		var pa: Rect2 = room.play_area
+		room_min_x = pa.position.x
+		room_max_x = pa.position.x + pa.size.x
+		room_min_y = pa.position.y
+		room_max_y = pa.position.y + pa.size.y
 
 	nav_agent.path_desired_distance = 4.0
 	nav_agent.target_desired_distance = 20.0
@@ -69,14 +71,14 @@ func _ready() -> void:
 	EnemyManager.register(self)
 	detection_area.body_entered.connect(_on_player_detected)
 
-	if room_number == 2:
-		visible = false
-		process_mode = Node.PROCESS_MODE_DISABLED
-		detection_area.monitoring = false
-
 	max_health = health
 	_pick_patrol_point()
 	_update_health_bar()
+
+# Désenregistre l'ennemi quand il quitte l'arbre (ex. changement de scène),
+# pour éviter des références mortes dans EnemyManager (autoload persistant).
+func _exit_tree() -> void:
+	EnemyManager.unregister(self)
 
 # === BOUCLE PRINCIPALE ===
 
@@ -182,15 +184,14 @@ func _face_player() -> void:
 		facing_direction = (player.global_position - global_position).normalized()
 
 func _player_in_same_room() -> bool:
-	if player == null:
-		return false
-	return (room_number == 1 and player.global_position.x < 2560.0) or \
-		   (room_number == 2 and player.global_position.x >= 2560.0)
+	# Une salle = une scène : le joueur est toujours dans la même salle que l'ennemi.
+	return player != null
 
 func _pick_patrol_point() -> void:
 	var offset := Vector2(randf_range(-150, 150), randf_range(-150, 150))
 	patrol_target = global_position + offset
 	patrol_target.x = clamp(patrol_target.x, room_min_x + 100, room_max_x - 100)
+	patrol_target.y = clamp(patrol_target.y, room_min_y + 100, room_max_y - 100)
 
 func _on_player_detected(body: Node2D) -> void:
 	if body.is_in_group("player") and state != State.DEAD:

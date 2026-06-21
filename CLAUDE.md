@@ -20,6 +20,7 @@ Open the project in the Godot 4.6 editor and press **F5** (or the play button). 
 |-----------|------|------|
 | `Settings` | `scripts/settings.gd` | Loads/saves keybindings to `user://settings.cfg` |
 | `EnemyManager` | `scripts/enemy_manager.gd` | Coordinates all enemies tactically each frame |
+| `GameState` | `scripts/game_state.gd` | Persists player health + inventory across room scenes |
 
 ### Key systems
 
@@ -33,15 +34,17 @@ Open the project in the Godot 4.6 editor and press **F5** (or the play button). 
 
 **`scenes/player/player.gd`** — CharacterBody2D. Click-to-attack at cursor (50 px range), dash with i-frames (600 px/s, 0.3 s), 1 s invincibility after hit.
 
-**`scenes/world/world.gd`** — master coordinator. Builds the `NavigationRegion2D` polygon at runtime (2 rooms + 5 rock obstacles each). Detects room clear → opens door. Room 2 enemies are kept inactive until the player crosses x = 2560.
+**`scenes/world/room.gd`** — generic room script attached to each room scene's root. Builds a single `NavigationRegion2D` at runtime: the `play_area` (Rect2) is the walkable bound, and the static colliders under the room (tiles with a hitbox, walls, door barriers) are **baked out automatically** via `NavigationServer2D.parse_source_geometry_data` + `bake_from_source_geometry_data` (so adding/editing collidable tiles updates enemy pathing with no code). `nav_agent_radius` sets the margin, `nav_collision_mask` selects which physics layers to carve; `obstacle_rects` (Array[Rect2]) adds optional manual holes. On clear it opens every door (group `door`) and records the room in `GameState.cleared_rooms`. When the player re-enters a cleared room, its enemies are freed immediately (it stays empty, doors already open). If `is_final_room` is set, clearing it triggers victory. On load, the player is placed on the `Marker2D` whose name matches `GameState.next_spawn_point` (set by the door that was used).
+
+**`scenes/world/door.gd` / `door.tscn`** — a door is an `Area2D` placed anywhere on a room's edge (any direction). Exports `target_scene` (room it leads to) + `target_spawn` (name of the arrival `Marker2D` in that room). It has a child `Barriere` (StaticBody) that physically blocks until the room is cleared; `room.gd` then calls `open()`. On contact with the player (when open) it saves state to `GameState` and loads `target_scene`. A door with empty `target_scene` never opens (acts as a wall / dead end). Doors are fully directional-agnostic: a bottom door can lead to a top spawn, branches are possible, etc.
 
 ### Level structure
 
-Two rooms laid out horizontally:
-- Room 1: x 0–2560
-- Room 2: x 2560–5088
+Every room is its own scene under `scenes/world/`, all built on the **same local origin** (a 2560×1440 box). Because they share coordinates, the player's `Camera2D` limits are set once (`0/0/2560/1440`) and work in every room.
 
-Room boundaries are checked by hardcoded x-coordinates in `world.gd` and `enemy_manager.gd`. Any new room must update these constants in both files.
+Rooms are linked by **doors**, not hardcoded directions. Current layout: `salle_1` ⇄ `salle_2` ⇄ `salle_3` ⇄ `salle_4`, where `salle_4` is the final room (`is_final_room = true` → victory on clear). Each room has named arrival markers (`SpawnGauche`, `SpawnDroite`, …); a door's `target_spawn` names the marker the player lands on.
+
+To add a room: duplicate an existing room scene in Godot, place a door (instance of `door.tscn`) wherever you want and set its `target_scene` + `target_spawn`, add a matching arrival `Marker2D` (name it, e.g. `SpawnGauche`), point a door in the previous room at it, and adjust `obstacle_rects` / enemy placement. Set `is_final_room` on the last room. No hardcoded room boundaries remain — enemies read their bounds from the room's `play_area` (via the `room` group).
 
 ### Inventory
 

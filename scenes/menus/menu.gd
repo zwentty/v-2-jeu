@@ -12,6 +12,11 @@ func _ready() -> void:
 	$CenterContainer/VBoxContainer/BoutonStart.pressed.connect(_on_start_pressed)
 
 func _on_start_pressed() -> void:
-	# change_scene_to_file() remplace la scène actuelle par world.tscn.
-	# C'est l'équivalent d'un "chargement de niveau".
-	get_tree().change_scene_to_file("res://scenes/world/world.tscn")
+	# Nouvelle partie : on réinitialise l'état sauvegardé (vie + inventaire).
+	# Accès par chemin de nœud pour rester robuste si l'autoload n'est pas
+	# encore enregistré (projet non rechargé dans l'éditeur).
+	var gs := get_node_or_null("/root/GameState")
+	if gs != null:
+		gs.reset()
+	# change_scene_to_file() charge la première salle.
+	get_tree().change_scene_to_file("res://scenes/world/salle_1.tscn")

@@ -28,7 +28,6 @@ var _player: Node2D = null               # Référence au joueur
 var _timer: float = 0.0                  # Timer pour la réassignation périodique des rôles
 var _rush_mode: bool = false             # Mode rush actif (tous les ennemis de mêlée attaquent)
 var _rush_cooldown: float = 0.0          # Temps restant avant désactivation du mode rush
-var _room2_activated: bool = false       # Indique si la salle 2 a été activée
 
 # === FONCTIONS PUBLIQUES (API pour les ennemis) ===
 
@@ -78,12 +77,7 @@ func _process(delta: float) -> void:
 	if _player == null:
 		return
 	_cleanup()  # Nettoyer les ennemis morts/invalides
-	
-	# Activer les ennemis de la salle 2 quand le joueur y entre
-	if not _room2_activated and _player.global_position.x >= 2560.0:
-		_activate_room2()
-		_room2_activated = true
-	
+
 	# Décrémenter le cooldown du mode rush
 	if _rush_cooldown > 0.0:
 		_rush_cooldown -= delta
@@ -106,22 +100,6 @@ func _find_player() -> void:
 func _cleanup() -> void:
 	_enemies = _enemies.filter(func(e): return is_instance_valid(e) and e.state != e.State.DEAD)
 	_ranged_enemies = _ranged_enemies.filter(func(e): return is_instance_valid(e) and e.state != e.State.DEAD)
-
-# Active tous les ennemis de la salle 2
-func _activate_room2() -> void:
-	# Activer ennemis de mêlée
-	for enemy in _enemies:
-		if is_instance_valid(enemy) and enemy.room_number == 2:
-			enemy.visible = true
-			enemy.process_mode = Node.PROCESS_MODE_INHERIT
-			enemy.detection_area.monitoring = true
-	
-	# Activer ennemis à distance
-	for enemy in _ranged_enemies:
-		if is_instance_valid(enemy) and enemy.room_number == 2:
-			enemy.visible = true
-			enemy.process_mode = Node.PROCESS_MODE_INHERIT
-			enemy.detection_area.monitoring = true
 
 # === LOGIQUE DE RÉASSIGNATION DES RÔLES ===
 

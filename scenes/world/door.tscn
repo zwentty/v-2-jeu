@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://b8door0room01"]
+
+[ext_resource type="Script" uid="uid://cv327u18qfpth" path="res://scenes/world/door.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="zone"]
+size = Vector2(12, 14)
+
+[sub_resource type="RectangleShape2D" id="bloc"]
+size = Vector2(32, 100)
+
+[node name="Door" type="Area2D" unique_id=1735696451]
+collision_layer = 0
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1210571528]
+shape = SubResource("zone")
+
+[node name="Visual" type="Polygon2D" parent="." unique_id=948919572]
+color = Color(0.55, 0.4, 0.2, 1)
+polygon = PackedVector2Array(-16, -50, 16, -50, 16, 50, -16, 50)
+
+[node name="Barriere" type="StaticBody2D" parent="." unique_id=306482780]
+collision_layer = 2
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Barriere" unique_id=1337640104]
+shape = SubResource("bloc")
