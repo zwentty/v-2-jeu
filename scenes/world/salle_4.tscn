@@ -24,6 +24,7 @@
 [ext_resource type="Texture2D" uid="uid://jsoihjshvu1c" path="res://assets/Sprout Lands - Sprites - Basic pack/Sprout Lands - Sprites - Basic pack/Objects/Basic_Grass_Biom_things.png" id="22_om7af"]
 [ext_resource type="Texture2D" uid="uid://bw4h08vd4xoy6" path="res://assets/Sprout Lands - Sprites - Basic pack/Sprout Lands - Sprites - Basic pack/Objects/Basic_Plants.png" id="23_got8c"]
 [ext_resource type="PackedScene" uid="uid://dxfaewnxhoqg" path="res://scenes/player/player.tscn" id="24_3acvq"]
+[ext_resource type="PackedScene" uid="uid://btransformui00a1" path="res://scenes/ui/transform_ui.tscn" id="ui_transform"]
 [ext_resource type="PackedScene" uid="uid://ce4ongkgfv5d8" path="res://scenes/enemy/enemy.tscn" id="25_w5shc"]
 [ext_resource type="PackedScene" uid="uid://dmciy24fnm8cw" path="res://scenes/enemy/ranged_enemy.tscn" id="26_mpame"]
 [ext_resource type="PackedScene" uid="uid://b8door0room01" path="res://scenes/world/door.tscn" id="door"]
@@ -1139,6 +1140,8 @@ position = Vector2(2512, 720)
 position = Vector2(1639, 724)
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=644989842]
+
+[node name="TransformUI" parent="UILayer" instance=ExtResource("ui_transform")]
 
 [node name="PauseButton" type="Button" parent="UILayer" unique_id=625786751]
 offset_left = 10.0

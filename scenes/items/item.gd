@@ -4,10 +4,16 @@
 # =============================================================================
 extends Area2D
 
+# Émis au ramassage, juste avant la destruction de l'objet, pour qu'un futur
+# système d'inventaire récupère la forme transportée (peut être null).
+signal forme_ramassee(forme: PlayableForm)
+
 @export var item_name: String = "Objet"
 # Couleur et forme du visuel — surchargées à l'instanciation pour les drops ennemis
 @export var item_color: Color = Color(1, 0.8, 0, 1)
 @export var item_polygon: PackedVector2Array
+# Forme jouable transportée par cet objet (renseignée par l'ennemi à sa mort).
+@export var carried_form: PlayableForm = null
 
 var player_nearby: bool = false
 
@@ -59,7 +65,14 @@ func _on_body_exited(body: Node2D) -> void:
 func est_ame() -> bool:
 	return item_name.begins_with("Âme")
 
+# Retourne la forme jouable transportée (null si aucune).
+# Permet à un futur inventaire de la récupérer sans passer par le signal.
+func get_carried_form() -> PlayableForm:
+	return carried_form
+
 # Fonction appelée par le joueur pour ramasser l'objet
 func pickup() -> String:
+	# Expose la forme transportée avant destruction (inventaire futur).
+	forme_ramassee.emit(carried_form)
 	queue_free()
 	return item_name

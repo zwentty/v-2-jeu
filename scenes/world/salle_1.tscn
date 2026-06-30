@@ -1,6 +1,7 @@
 [gd_scene format=4 uid="uid://dbs1080blvp01"]
 
 [ext_resource type="PackedScene" uid="uid://dxfaewnxhoqg" path="res://scenes/player/player.tscn" id="1"]
+[ext_resource type="PackedScene" uid="uid://btransformui00a1" path="res://scenes/ui/transform_ui.tscn" id="ui_transform"]
 [ext_resource type="PackedScene" uid="uid://ce4ongkgfv5d8" path="res://scenes/enemy/enemy.tscn" id="2"]
 [ext_resource type="Texture2D" uid="uid://bueuvgey4jtqm" path="res://assets/Sprout Lands - UI Pack - Basic pack/Sprout Lands - UI Pack - Basic pack/emojis-free/Emoji_Spritesheet_Free.png" id="2_v5dby"]
 [ext_resource type="Script" uid="uid://c0mxqx4d6dxfs" path="res://scenes/world/room.gd" id="3"]
@@ -1143,6 +1144,8 @@ position = Vector2(2514, 720)
 position = Vector2(1639, 724)
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=644989842]
+
+[node name="TransformUI" parent="UILayer" instance=ExtResource("ui_transform")]
 
 [node name="PauseButton" type="Button" parent="UILayer" unique_id=625786751]
 offset_left = 10.0

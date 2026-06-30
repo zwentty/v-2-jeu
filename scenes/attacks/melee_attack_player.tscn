@@ -1,0 +1,31 @@
+; =============================================================================
+; melee_attack_player.tscn
+; Attaque mêlée — VERSION PLAYER (slime).
+; Copie de la hitbox d'attaque de l'ennemi (nœud AttackHitbox de enemy.tscn),
+; mais qui vise les ENNEMIS.
+;
+; collision_layer = 0 : la hitbox n'existe sur aucune couche.
+; collision_mask  = 4 : elle DÉTECTE la couche 3 (ennemis), au lieu de la
+;                       couche 1 (joueur) que vise la version ennemi.
+; =============================================================================
+
+[gd_scene load_steps=3 format=3 uid="uid://bplayermelee0a1"]
+
+[ext_resource type="Script" path="res://scenes/attacks/melee_attack_player.gd" id="1"]
+
+[sub_resource type="CircleShape2D" id="1"]
+radius = 25.0
+
+[node name="MeleeAttackPlayer" type="Area2D"]
+collision_layer = 0
+collision_mask = 4
+script = ExtResource("1")
+
+; Visuel bleuté (slime) au lieu du jaune de l'attaque-ennemi
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.3, 0.8, 1, 0.35)
+polygon = PackedVector2Array(-20, -20, 20, -20, 20, 20, -20, 20)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")
+disabled = true

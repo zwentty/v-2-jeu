@@ -1,0 +1,91 @@
+; SpriteFrames de la forme "Soldat" (réutilise les feuilles du Human_Soldier,
+; mêmes idle/walk que le sprite actuel du joueur). Version dédiée joueur en
+; ressource autonome pour être référencée par soldat_form.tres.
+
+[gd_resource type="SpriteFrames" load_steps=13 format=3 uid="uid://csoldatframes0a"]
+
+[ext_resource type="Texture2D" uid="uid://cfrtaj87vpxgb" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Idle-Sheet.png" id="1"]
+[ext_resource type="Texture2D" uid="uid://b5j1vcir5ebxu" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Walk-Sheet.png" id="2"]
+
+[sub_resource type="AtlasTexture" id="idle_0"]
+atlas = ExtResource("1")
+region = Rect2(0, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="idle_1"]
+atlas = ExtResource("1")
+region = Rect2(96, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="idle_2"]
+atlas = ExtResource("1")
+region = Rect2(192, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="idle_3"]
+atlas = ExtResource("1")
+region = Rect2(288, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="walk_0"]
+atlas = ExtResource("2")
+region = Rect2(0, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="walk_1"]
+atlas = ExtResource("2")
+region = Rect2(96, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="walk_2"]
+atlas = ExtResource("2")
+region = Rect2(192, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="walk_3"]
+atlas = ExtResource("2")
+region = Rect2(288, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="walk_4"]
+atlas = ExtResource("2")
+region = Rect2(384, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="walk_5"]
+atlas = ExtResource("2")
+region = Rect2(480, 0, 96, 96)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("idle_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("idle_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("idle_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("idle_3")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("walk_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("walk_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("walk_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("walk_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("walk_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("walk_5")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 10.0
+}]

@@ -1,0 +1,30 @@
+; =============================================================================
+; projectile_player.tscn
+; Projectile — VERSION PLAYER (slime).
+; Copie de projectile.tscn (projectile de l'ennemi à distance),
+; mais qui vise les ENNEMIS.
+;
+; collision_layer = 8 : couche des projectiles (couche 4), comme la version ennemi.
+; collision_mask  = 6 : DÉTECTE les couches 2 (murs) + 3 (ennemis), au lieu de
+;                       la couche 1 (joueur) que vise la version ennemi.
+; =============================================================================
+
+[gd_scene load_steps=3 format=3 uid="uid://bplayerproj00a1"]
+
+[ext_resource type="Script" path="res://scenes/attacks/projectile_player.gd" id="1"]
+
+[sub_resource type="CircleShape2D" id="1"]
+radius = 8.0
+
+[node name="ProjectilePlayer" type="Area2D"]
+collision_layer = 8
+collision_mask = 6
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")
+
+; Visuel bleuté (slime) au lieu du rouge-orangé de la version ennemi
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.3, 0.8, 1, 1)
+polygon = PackedVector2Array(-12, -6, 12, 0, -12, 6)

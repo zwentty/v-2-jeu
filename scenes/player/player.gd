@@ -36,6 +36,9 @@ const PLAYER_PROJECTILE_COOLDOWN = 0.5
 
 var health: int = 25
 var max_health: int = 25
+# Vitesse courante : valeur de base, écrasée par le move_speed de la forme active
+# (appliquée par le TransformHandler via le StatBlock de la forme).
+var move_speed: float = SPEED
 var is_invincible: bool = false
 var invincible_timer: float = 0.0
 
@@ -58,6 +61,9 @@ var inventory: Control = null
 var projectile_cooldown_timer: float = 0.0
 
 @onready var animated_sprite: AnimatedSprite2D = $Visual
+# TransformInventory enfant (façade des transformations). Trouvé par capacité,
+# sans dépendre du type concret ni du nom exact du nœud.
+@onready var transform_inventory: Node = _find_transform_inventory()
 
 # -----------------------------------------------------------------------------
 # _ready()
@@ -108,20 +114,29 @@ func _unhandled_input(event: InputEvent) -> void:
 	if is_key and event.echo:
 		return
 
-	# Attaque (attaque-dash) — touche/clic configurable
+	# Attaque — touche/clic configurable.
+	# Slime transformé : attaque de la forme active (façade, type-agnostique).
+	# Slime de base : attaque-dash habituelle.
 	if Settings.binding_matches_event(Settings.attaque_binding, event):
-		if not is_stunned and attack_dash_cooldown_timer <= 0.0:
-			var mouse_pos := get_global_mouse_position()
-			var direction := (mouse_pos - global_position).normalized()
-			if direction == Vector2.ZERO:
-				direction = facing_direction
-			_start_attack_dash(direction)
-			get_viewport().set_input_as_handled()
+		if not is_stunned:
+			if transform_inventory and transform_inventory.is_transformed():
+				transform_inventory.use_attack()
+				get_viewport().set_input_as_handled()
+			elif attack_dash_cooldown_timer <= 0.0:
+				var mouse_pos := get_global_mouse_position()
+				var direction := (mouse_pos - global_position).normalized()
+				if direction == Vector2.ZERO:
+					direction = facing_direction
+				_start_attack_dash(direction)
+				get_viewport().set_input_as_handled()
 		return
 
-	# Compétence (ramassage des âmes) — touche/clic configurable
+	# Compétence du slime : manger les âmes. C'est la capacité de la FORME DE BASE
+	# uniquement — une fois transformé en ennemi, on ne peut plus manger d'âme
+	# (les formes-ennemis n'ont pas de compétence).
 	if Settings.binding_matches_event(Settings.competence_binding, event):
-		if _try_pickup_items(true):
+		var sous_forme_base: bool = transform_inventory == null or not transform_inventory.is_transformed()
+		if sous_forme_base and _try_pickup_items(true):
 			get_viewport().set_input_as_handled()
 		return
 
@@ -187,7 +202,7 @@ func _handle_movement() -> void:
 		if animated_sprite.animation != "idle":
 			animated_sprite.play("idle")
 
-	velocity = direction * SPEED
+	velocity = direction * move_speed
 	move_and_slide()
 
 # -----------------------------------------------------------------------------
@@ -244,7 +259,26 @@ func take_damage(amount: int) -> void:
 # _die()
 # -----------------------------------------------------------------------------
 func _die() -> void:
+	on_death()
 	get_tree().change_scene_to_file("res://scenes/menus/game_over.tscn")
+
+# -----------------------------------------------------------------------------
+# on_death()
+# Réinitialisation roguelike : à la mort, l'inventaire de transformations est
+# entièrement vidé et le slime repasse sous sa forme de base. Après cet appel,
+# l'état est identique à un début de run.
+# -----------------------------------------------------------------------------
+func on_death() -> void:
+	if transform_inventory and transform_inventory.has_method("reset_for_new_run"):
+		transform_inventory.reset_for_new_run()
+
+# Retrouve le TransformInventory enfant (par capacité, sans dépendre de son
+# type concret ni du nom du nœud).
+func _find_transform_inventory() -> Node:
+	for child in get_children():
+		if child.has_method("reset_for_new_run"):
+			return child
+	return null
 
 # -----------------------------------------------------------------------------
 # _update_health_bar()

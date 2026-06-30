@@ -1,0 +1,14 @@
+; Stats CÔTÉ JOUEUR de la forme "Soldat" (indépendantes des stats de l'ennemi
+; soldat). Profil bagarreur : plus résistant et plus fort que le slime de base,
+; un peu plus lent et plus lourd.
+
+[gd_resource type="Resource" script_class="StatBlock" load_steps=2 format=3 uid="uid://csoldatstats0a"]
+
+[ext_resource type="Script" path="res://scripts/stat_block.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+max_health = 30.0
+move_speed = 190.0
+damage = 4.0
+weight = 1.2

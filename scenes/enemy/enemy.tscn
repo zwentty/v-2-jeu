@@ -17,9 +17,10 @@
 ; └─ NavigationAgent2D - Gère le pathfinding et l'évitement
 ; =============================================================================
 
-[gd_scene format=3 uid="uid://ce4ongkgfv5d8"]
+[gd_scene load_steps=7 format=3 uid="uid://ce4ongkgfv5d8"]
 
 [ext_resource type="Script" uid="uid://cug8l4w1g18pk" path="res://scenes/enemy/enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/forms/soldat_form.tres" id="2_form"]
 
 ; =============================================================================
 ; RESSOURCES (Formes de collision définies en avance)
@@ -64,6 +65,7 @@ radius = 25.0
 collision_layer = 4
 collision_mask = 6
 script = ExtResource("1")
+drop_form = ExtResource("2_form")
 
 ; =============================================================================
 ; VISUEL DE L'ENNEMI

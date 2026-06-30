@@ -40,6 +40,9 @@ var debug_path_color: Color = Color(1.0, 0.5, 0.0, 0.85)  # orange (mêlée par 
 var drop_nom: String = ""
 var drop_couleur: Color = Color.BLACK
 var drop_polygone: PackedVector2Array = PackedVector2Array()
+# Forme jouable transmise au drop à la mort. À assigner par scène d'ennemi dans
+# l'éditeur (référence .tres), puisqu'une Resource ne se code pas en dur.
+@export var drop_form: PlayableForm = null
 
 # === INITIALISATION ===
 
@@ -151,6 +154,7 @@ func die() -> void:
 		item.item_name = drop_nom
 		item.item_color = drop_couleur
 		item.item_polygon = drop_polygone
+		item.carried_form = drop_form
 		get_parent().add_child(item)
 	_mort_nettoyage()
 

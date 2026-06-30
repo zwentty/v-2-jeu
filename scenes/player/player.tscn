@@ -1,6 +1,9 @@
 [gd_scene format=3 uid="uid://dxfaewnxhoqg"]
 
 [ext_resource type="Script" uid="uid://dilvcdi6yqj0e" path="res://scenes/player/player.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/player/transform_handler.gd" id="4_handler"]
+[ext_resource type="Script" path="res://scenes/player/transform_inventory.gd" id="5_inv"]
+[ext_resource type="Resource" path="res://resources/forms/base_form.tres" id="6_base"]
 [ext_resource type="Texture2D" uid="uid://cfrtaj87vpxgb" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Idle-Sheet.png" id="2"]
 [ext_resource type="Texture2D" uid="uid://b5j1vcir5ebxu" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Walk-Sheet.png" id="3"]
 
@@ -135,3 +138,13 @@ limit_left = 0
 limit_top = 0
 limit_right = 2560
 limit_bottom = 1440
+
+[node name="TransformHandler" type="Node2D" parent="." node_paths=PackedStringArray("animated_sprite", "stats_node")]
+script = ExtResource("4_handler")
+animated_sprite = NodePath("../Visual")
+stats_node = NodePath("..")
+
+[node name="TransformInventory" type="Node" parent="." node_paths=PackedStringArray("handler")]
+script = ExtResource("5_inv")
+handler = NodePath("../TransformHandler")
+base_form = ExtResource("6_base")

@@ -1,0 +1,24 @@
+; PlayableForm "Soldat" — forme obtenue en mangeant le drop de l'ennemi mêlée.
+; ability_scene laissé VIDE : pas encore de compétence dédiée pour cette forme.
+
+[gd_resource type="Resource" script_class="PlayableForm" load_steps=7 format=3 uid="uid://csoldatform00a"]
+
+[ext_resource type="Script" path="res://scripts/playable_form.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://bplayermelee0a1" path="res://scenes/attacks/melee_attack_player.tscn" id="2"]
+[ext_resource type="Resource" path="res://resources/forms/soldat_stats.tres" id="3"]
+[ext_resource type="SpriteFrames" uid="uid://csoldatframes0a" path="res://resources/forms/soldat_frames.tres" id="4"]
+[ext_resource type="Texture2D" uid="uid://cfrtaj87vpxgb" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Idle-Sheet.png" id="5"]
+
+[sub_resource type="AtlasTexture" id="icon"]
+atlas = ExtResource("5")
+region = Rect2(0, 0, 96, 96)
+
+[resource]
+script = ExtResource("1")
+id = &"soldat"
+display_name = "Soldat"
+sprite_frames = ExtResource("4")
+attack_scene = ExtResource("2")
+ability_scene = null
+stats = ExtResource("3")
+icon = SubResource("icon")
