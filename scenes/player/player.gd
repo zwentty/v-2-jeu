@@ -6,6 +6,9 @@
 extends CharacterBody2D
 
 const PROJECTILE_SCENE = preload("res://scenes/projectile/projectile.tscn")
+const DEATH_SEQUENCE_SCENE = preload("res://scenes/menus/death_sequence.tscn")
+# Nom de l'animation de mort attendue dans les death_frames d'une forme.
+const DEATH_ANIM: StringName = &"death"
 
 # -----------------------------------------------------------------------------
 # CONSTANTES
@@ -23,8 +26,8 @@ const PLAYER_PROJECTILE_COOLDOWN = 0.5
 # VARIABLES D'ÉTAT
 # -----------------------------------------------------------------------------
 
-var health: int = 25
-var max_health: int = 25
+var health: int = 5
+var max_health: int = 5
 # Vitesse courante : valeur de base, écrasée par le move_speed de la forme active
 # (appliquée par le TransformHandler via le StatBlock de la forme).
 var move_speed: float = SPEED
@@ -41,6 +44,9 @@ var is_intangible: bool = false
 var facing_direction: Vector2 = Vector2.DOWN
 var inventory: Control = null
 
+# Garde-fou : évite de relancer la cinématique de mort plusieurs fois.
+var _is_dying: bool = false
+
 # Projectile du joueur
 var projectile_cooldown_timer: float = 0.0
 
@@ -56,6 +62,12 @@ func _ready() -> void:
 	add_to_group("player")
 	_update_health_bar()
 	z_index = 2
+
+	# Fin du compte à rebours de run (GameState) -> le joueur meurt.
+	var gs := get_node_or_null("/root/GameState")
+	if gs != null and gs.has_signal("run_time_expired") \
+			and not gs.run_time_expired.is_connected(_on_run_time_expired):
+		gs.run_time_expired.connect(_on_run_time_expired)
 
 # -----------------------------------------------------------------------------
 # _get_inventory()
@@ -74,9 +86,14 @@ func _get_inventory() -> Control:
 # _physics_process(delta)
 # -----------------------------------------------------------------------------
 func _physics_process(delta: float) -> void:
-	# Pendant qu'une capacité pilote le joueur (dash, stun…), il ne bouge pas de
-	# lui-même : la capacité appelle alors move_and_slide à sa place.
-	if not control_locked:
+	# En cours de mort : on n'exécute plus la logique de gameplay (mouvement,
+	# visuel...) qui écraserait l'animation de mort avant que la pause ne prenne
+	# effet (elle ne s'applique qu'à la frame suivante).
+	if _is_dying:
+		return
+	_handle_attack_dash(delta)
+	_handle_stun(delta)
+	if not is_attack_dashing and not is_stunned:
 		_handle_movement()
 	_handle_invincibility(delta)
 	_update_visual()
@@ -230,9 +247,55 @@ func take_damage(amount: int) -> void:
 # -----------------------------------------------------------------------------
 # _die()
 # -----------------------------------------------------------------------------
+# Fin du compte à rebours de run : le joueur meurt (réutilise la cinématique).
+func _on_run_time_expired() -> void:
+	_die()
+
 func _die() -> void:
-	on_death()
-	get_tree().change_scene_to_file("res://scenes/menus/game_over.tscn")
+	if _is_dying:
+		return
+	_is_dying = true
+
+	# Animation de mort du slime, jouée sur SON propre sprite (le joueur possède
+	# son Visual). En PROCESS_MODE_ALWAYS pour qu'elle s'anime malgré la pause du
+	# jeu déclenchée par la cinématique. Non bouclée : se fige sur la dernière frame.
+	_play_death_animation()
+
+	# Cinématique de mort superposée (scène autonome, découplée du slime).
+	# On NE réinitialise PAS ici (on_death changerait le sprite en pleine
+	# cinématique) : la run repart proprement quand le bouton « Rejouer »
+	# recharge la salle de départ (joueur neuf, forme de base, inventaire vide).
+	var seq := DEATH_SEQUENCE_SCENE.instantiate()
+	get_tree().current_scene.add_child(seq)
+	seq.start(self, $Camera2D)
+
+# -----------------------------------------------------------------------------
+# _play_death_animation()
+# Joue l'animation de mort de la FORME ACTIVE (soldat -> mort du soldat, etc.).
+# Si la forme n'a pas de death_frames, on ne joue rien (sprite laissé tel quel).
+# En PROCESS_MODE_ALWAYS pour s'animer malgré la pause. Non bouclée : se fige
+# sur la dernière frame.
+# -----------------------------------------------------------------------------
+func _play_death_animation() -> void:
+	# Récupère les frames de mort de la forme active (null si aucune).
+	var frames: SpriteFrames = null
+	if transform_inventory and transform_inventory.has_method("get_active_form"):
+		var form = transform_inventory.get_active_form()
+		if form != null:
+			frames = form.death_frames
+
+	# Pas d'animation de mort pour cette forme : on ne fait rien.
+	if frames == null or not frames.has_animation(DEATH_ANIM):
+		return
+
+	# Coupe l'attaque-dash / stun en cours pour ne pas ré-écraser le sprite.
+	is_attack_dashing = false
+	is_stunned = false
+	animated_sprite.modulate = Color.WHITE
+	animated_sprite.flip_h = false
+	animated_sprite.process_mode = Node.PROCESS_MODE_ALWAYS
+	animated_sprite.sprite_frames = frames
+	animated_sprite.play(DEATH_ANIM)
 
 # -----------------------------------------------------------------------------
 # on_death()

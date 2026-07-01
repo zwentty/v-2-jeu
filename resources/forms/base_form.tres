@@ -5,13 +5,15 @@
 ; toute autre forme — plus rien n'est codé en dur dans player.gd.
 
 [gd_resource type="Resource" script_class="PlayableForm" load_steps=8 format=3 uid="uid://cbaseform0000a"]
+[gd_resource type="Resource" script_class="PlayableForm" format=3 uid="uid://dkulep5dfk44a"]
 
-[ext_resource type="Script" path="res://scripts/playable_form.gd" id="1"]
-[ext_resource type="Resource" path="res://resources/forms/base_slime_stats.tres" id="2"]
-[ext_resource type="SpriteFrames" uid="uid://cbaseslimefrm0a" path="res://resources/forms/base_slime_frames.tres" id="3"]
+[ext_resource type="Script" uid="uid://epf0fjhe3k8x" path="res://scripts/playable_form.gd" id="1"]
+[ext_resource type="Resource" uid="uid://cbv1vgsys7dr7" path="res://resources/forms/base_slime_stats.tres" id="2"]
+[ext_resource type="SpriteFrames" uid="uid://rrji8ohl1d03" path="res://resources/forms/base_slime_frames.tres" id="3"]
 [ext_resource type="Texture2D" uid="uid://0wtscdt6j4js" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Monster_Slime/With_Shadows/Monster_Slime_Idle-Sheet.png" id="4"]
-[ext_resource type="PackedScene" uid="uid://bslimedash0a1" path="res://scenes/attacks/slime_dash_attack.tscn" id="5"]
-[ext_resource type="PackedScene" uid="uid://bslimeeat0a1" path="res://scenes/attacks/slime_eat_souls.tscn" id="6"]
+[ext_resource type="SpriteFrames" uid="uid://bkjhe35qe1ql7" path="res://resources/forms/base_slime_death_frames.tres" id="5"]
+[ext_resource type="PackedScene" uid="uid://bslimedash0a1" path="res://scenes/attacks/slime_dash_attack.tscn" id="6"]
+[ext_resource type="PackedScene" uid="uid://bslimeeat0a1" path="res://scenes/attacks/slime_eat_souls.tscn" id="7"]
 
 [sub_resource type="AtlasTexture" id="icon"]
 atlas = ExtResource("4")
@@ -22,7 +24,8 @@ script = ExtResource("1")
 id = &"slime"
 display_name = "Slime"
 sprite_frames = ExtResource("3")
-attack_scene = ExtResource("5")
-ability_scene = ExtResource("6")
+death_frames = ExtResource("5")
+attack_scene = ExtResource("6")
+ability_scene = ExtResource("7")
 stats = ExtResource("2")
 icon = SubResource("icon")
