@@ -14,17 +14,6 @@ const PROJECTILE_SCENE = preload("res://scenes/projectile/projectile.tscn")
 const SPEED = 200.0
 const INVINCIBLE_DURATION = 1.0
 
-# Attaque-dash : le joueur fonce vers la souris pour infliger des dégâts
-const ATTACK_DASH_SPEED = 500.0
-const ATTACK_DASH_DURATION = 0.30
-const ATTACK_DASH_COOLDOWN = 1.2
-const ATTACK_DAMAGE = 3
-
-# Knockback + stun infligés au joueur après avoir touché un ennemi
-const PLAYER_KNOCKBACK_SPEED = 300.0
-const PLAYER_KNOCKBACK_DURATION = 0.25
-const PLAYER_STUN_DURATION = 0.8
-
 # Projectile lancé par le joueur (clic droit)
 const PLAYER_PROJECTILE_SPEED   = 500.0
 const PLAYER_PROJECTILE_DAMAGE  = 3
@@ -42,17 +31,12 @@ var move_speed: float = SPEED
 var is_invincible: bool = false
 var invincible_timer: float = 0.0
 
-# Attaque-dash
-var is_attack_dashing: bool = false
-var attack_dash_timer: float = 0.0
-var attack_dash_cooldown_timer: float = 0.0
-var attack_dash_direction: Vector2 = Vector2.ZERO
-
-# Stun + knockback du joueur après impact
-var is_stunned: bool = false
-var stun_timer: float = 0.0
-var knockback_velocity: Vector2 = Vector2.ZERO
-var knockback_timer: float = 0.0
+# Drapeaux génériques pilotés par les capacités (attaque/compétence de la forme
+# active). Le joueur n'implémente plus aucun dash/stun : il s'efface simplement.
+#   control_locked : le joueur ne se déplace plus de lui-même (dash, stun…).
+#   is_intangible  : le joueur ignore les dégâts reçus (i-frames du dash…).
+var control_locked: bool = false
+var is_intangible: bool = false
 
 var facing_direction: Vector2 = Vector2.DOWN
 var inventory: Control = null
@@ -72,7 +56,6 @@ func _ready() -> void:
 	add_to_group("player")
 	_update_health_bar()
 	z_index = 2
-	$AttackArea.body_entered.connect(_on_attack_hit)
 
 # -----------------------------------------------------------------------------
 # _get_inventory()
@@ -91,9 +74,9 @@ func _get_inventory() -> Control:
 # _physics_process(delta)
 # -----------------------------------------------------------------------------
 func _physics_process(delta: float) -> void:
-	_handle_attack_dash(delta)
-	_handle_stun(delta)
-	if not is_attack_dashing and not is_stunned:
+	# Pendant qu'une capacité pilote le joueur (dash, stun…), il ne bouge pas de
+	# lui-même : la capacité appelle alors move_and_slide à sa place.
+	if not control_locked:
 		_handle_movement()
 	_handle_invincibility(delta)
 	_update_visual()
@@ -114,35 +97,27 @@ func _unhandled_input(event: InputEvent) -> void:
 	if is_key and event.echo:
 		return
 
-	# Attaque — touche/clic configurable.
-	# Slime transformé : attaque de la forme active (façade, type-agnostique).
-	# Slime de base : attaque-dash habituelle.
+	# Attaque de la forme active (façade type-agnostique). La forme de base monte
+	# son attaque-dash, les formes-ennemis la leur : le joueur ne connaît rien du
+	# type concret. Cooldown/stun éventuels sont gérés par l'attaque elle-même.
 	if Settings.binding_matches_event(Settings.attaque_binding, event):
-		if not is_stunned:
-			if transform_inventory and transform_inventory.is_transformed():
-				transform_inventory.use_attack()
-				get_viewport().set_input_as_handled()
-			elif attack_dash_cooldown_timer <= 0.0:
-				var mouse_pos := get_global_mouse_position()
-				var direction := (mouse_pos - global_position).normalized()
-				if direction == Vector2.ZERO:
-					direction = facing_direction
-				_start_attack_dash(direction)
-				get_viewport().set_input_as_handled()
+		if transform_inventory:
+			transform_inventory.use_attack()
+			get_viewport().set_input_as_handled()
 		return
 
-	# Compétence du slime : manger les âmes. C'est la capacité de la FORME DE BASE
-	# uniquement — une fois transformé en ennemi, on ne peut plus manger d'âme
-	# (les formes-ennemis n'ont pas de compétence).
+	# Compétence de la forme active. La forme de base monte « manger les âmes » ;
+	# les formes-ennemis n'ont pas de compétence (ability_scene vide) : use_ability
+	# n'a alors aucun effet — la règle « seule la base peut manger » est structurelle.
 	if Settings.binding_matches_event(Settings.competence_binding, event):
-		var sous_forme_base: bool = transform_inventory == null or not transform_inventory.is_transformed()
-		if sous_forme_base and _try_pickup_items(true):
+		if transform_inventory:
+			transform_inventory.use_ability()
 			get_viewport().set_input_as_handled()
 		return
 
 	# Tir de projectile sur clic droit
 	if is_mouse_button and event.button_index == MOUSE_BUTTON_RIGHT:
-		if not is_stunned and projectile_cooldown_timer <= 0.0:
+		if not control_locked and projectile_cooldown_timer <= 0.0:
 			var mouse_pos := get_global_mouse_position()
 			var dir := (mouse_pos - global_position).normalized()
 			if dir == Vector2.ZERO:
@@ -219,16 +194,13 @@ func _handle_invincibility(delta: float) -> void:
 # -----------------------------------------------------------------------------
 # _update_visual()
 # Gère la couleur/transparence du sprite selon l'état actuel.
-# Priorité : stun > attaque-dash > invincible > normal
+# Priorité : capacité en cours (dash/stun) > invincible > normal
 # -----------------------------------------------------------------------------
 func _update_visual() -> void:
-	if is_stunned:
-		# Rouge clignotant : le joueur est étourdi après l'impact
-		$Visual.modulate = Color(1.0, 0.3, 0.3, 0.6 if fmod(stun_timer, 0.15) < 0.075 else 1.0)
-	elif is_attack_dashing:
-		# Bleu clignotant : le joueur est intangible pendant l'attaque-dash
-		$Visual.modulate = Color(0.5, 0.8, 1.0, 0.6 if fmod(attack_dash_timer, 0.1) < 0.05 else 1.0)
-	elif is_invincible:
+	# Une capacité pilote le joueur : elle gère elle-même le modulate du sprite.
+	if control_locked:
+		return
+	if is_invincible:
 		# Clignotement blanc après avoir reçu un coup
 		$Visual.modulate = Color(1.0, 1.0, 1.0, 0.3 if fmod(invincible_timer, 0.2) < 0.1 else 1.0)
 	else:
@@ -241,8 +213,8 @@ func _update_visual() -> void:
 func take_damage(amount: int) -> void:
 	if is_invincible:
 		return
-	# Intangible pendant l'attaque-dash
-	if is_attack_dashing:
+	# Intangible quand une capacité l'a rendu tel (i-frames du dash, etc.)
+	if is_intangible:
 		return
 
 	health -= amount
@@ -286,112 +258,6 @@ func _find_transform_inventory() -> Node:
 func _update_health_bar() -> void:
 	$HealthBar.max_value = max_health
 	$HealthBar.value = health
-
-# -----------------------------------------------------------------------------
-# _handle_attack_dash(delta)
-# Gère la progression du dash d'attaque (mouvement + hitbox active)
-# -----------------------------------------------------------------------------
-func _handle_attack_dash(delta: float) -> void:
-	if attack_dash_cooldown_timer > 0.0:
-		attack_dash_cooldown_timer -= delta
-
-	if not is_attack_dashing:
-		return
-
-	attack_dash_timer -= delta
-
-	if attack_dash_timer > 0.0:
-		velocity = attack_dash_direction * ATTACK_DASH_SPEED
-		move_and_slide()
-		# Détecte les ennemis DÉJÀ en contact avec la hitbox. Le signal body_entered
-		# ne se déclenche que sur une transition extérieur->intérieur : si un ennemi
-		# chevauchait déjà la hitbox au lancement de l'attaque (cas « collé »), il ne
-		# serait jamais touché. On vérifie donc explicitement les chevauchements.
-		for body in $AttackArea.get_overlapping_bodies():
-			_on_attack_hit(body)
-			if not is_attack_dashing:
-				return  # _on_attack_hit a terminé le dash après un coup réussi
-		if animated_sprite.animation != "walk":
-			animated_sprite.play("walk")
-		# Orienter le sprite dans la direction du dash
-		if attack_dash_direction.x < 0:
-			animated_sprite.flip_h = true
-		elif attack_dash_direction.x > 0:
-			animated_sprite.flip_h = false
-	else:
-		# Le dash s'est terminé sans toucher d'ennemi
-		_end_attack_dash()
-
-# -----------------------------------------------------------------------------
-# _start_attack_dash(direction)
-# Lance l'attaque-dash dans la direction donnée
-# -----------------------------------------------------------------------------
-func _start_attack_dash(direction: Vector2) -> void:
-	is_attack_dashing = true
-	attack_dash_timer = ATTACK_DASH_DURATION
-	attack_dash_direction = direction
-	attack_dash_cooldown_timer = ATTACK_DASH_COOLDOWN
-	# Hitbox positionnée légèrement en avant du joueur
-	$AttackArea.position = direction * 16.0
-	$AttackArea.monitoring = true
-	$AttackArea/AttackVisual.visible = true
-
-# -----------------------------------------------------------------------------
-# _end_attack_dash()
-# Stoppe l'attaque-dash et désactive la hitbox
-# -----------------------------------------------------------------------------
-func _end_attack_dash() -> void:
-	is_attack_dashing = false
-	$AttackArea.monitoring = false
-	$AttackArea/AttackVisual.visible = false
-
-# -----------------------------------------------------------------------------
-# _on_attack_hit(body)
-# Appelée quand la hitbox touche un corps pendant l'attaque-dash.
-# Inflige des dégâts, puis applique un knockback + stun au joueur.
-# -----------------------------------------------------------------------------
-func _on_attack_hit(body: Node2D) -> void:
-	if not body.is_in_group("enemy") or not body.has_method("take_damage"):
-		return
-	if not is_attack_dashing:
-		return
-
-	body.take_damage(ATTACK_DAMAGE)
-	print("Ennemi touché par l'attaque-dash !")
-
-	# Direction de rebond : s'éloigner de l'ennemi touché
-	var knockback_dir := (global_position - body.global_position).normalized()
-	if knockback_dir == Vector2.ZERO:
-		knockback_dir = -attack_dash_direction
-
-	# Stopper le dash et appliquer le stun + knockback
-	_end_attack_dash()
-	knockback_velocity = knockback_dir * PLAYER_KNOCKBACK_SPEED
-	knockback_timer = PLAYER_KNOCKBACK_DURATION
-	is_stunned = true
-	stun_timer = PLAYER_STUN_DURATION
-
-# -----------------------------------------------------------------------------
-# _handle_stun(delta)
-# Gère le stun et le knockback du joueur après un impact ennemi.
-# Pendant le stun, le joueur ne peut ni bouger ni attaquer.
-# -----------------------------------------------------------------------------
-func _handle_stun(delta: float) -> void:
-	if not is_stunned:
-		return
-
-	stun_timer -= delta
-
-	# Appliquer le knockback pendant sa durée, puis immobiliser
-	if knockback_timer > 0.0:
-		knockback_timer -= delta
-		velocity = knockback_velocity
-		move_and_slide()
-	else:
-		velocity = Vector2.ZERO
-
-	if stun_timer <= 0.0:
-		is_stunned = false
 
 # -----------------------------------------------------------------------------
 # _fire_projectile(direction)

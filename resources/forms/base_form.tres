@@ -1,14 +1,17 @@
 ; PlayableForm de BASE : le slime nu. Appliquée au démarrage et au revert.
-; attack_scene laissé VIDE : sous la forme de base, le joueur utilise son
-; attaque-dash interne (cf. player.gd, « forme si transformé, sinon dash »).
-; ability_scene laissé VIDE : pas de compétence de base pour l'instant.
+; attack_scene  : attaque-dash du slime (scenes/attacks/slime_dash_attack.tscn).
+; ability_scene : compétence « manger les âmes » (scenes/attacks/slime_eat_souls.tscn).
+; Ces deux capacités sont déclenchées via use_attack()/use_ability() comme pour
+; toute autre forme — plus rien n'est codé en dur dans player.gd.
 
-[gd_resource type="Resource" script_class="PlayableForm" load_steps=6 format=3 uid="uid://cbaseform0000a"]
+[gd_resource type="Resource" script_class="PlayableForm" load_steps=8 format=3 uid="uid://cbaseform0000a"]
 
 [ext_resource type="Script" path="res://scripts/playable_form.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/forms/base_slime_stats.tres" id="2"]
 [ext_resource type="SpriteFrames" uid="uid://cbaseslimefrm0a" path="res://resources/forms/base_slime_frames.tres" id="3"]
 [ext_resource type="Texture2D" uid="uid://0wtscdt6j4js" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Monster_Slime/With_Shadows/Monster_Slime_Idle-Sheet.png" id="4"]
+[ext_resource type="PackedScene" uid="uid://bslimedash0a1" path="res://scenes/attacks/slime_dash_attack.tscn" id="5"]
+[ext_resource type="PackedScene" uid="uid://bslimeeat0a1" path="res://scenes/attacks/slime_eat_souls.tscn" id="6"]
 
 [sub_resource type="AtlasTexture" id="icon"]
 atlas = ExtResource("4")
@@ -19,7 +22,7 @@ script = ExtResource("1")
 id = &"slime"
 display_name = "Slime"
 sprite_frames = ExtResource("3")
-attack_scene = null
-ability_scene = null
+attack_scene = ExtResource("5")
+ability_scene = ExtResource("6")
 stats = ExtResource("2")
 icon = SubResource("icon")

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bslimeeat0a1"]
+
+[ext_resource type="Script" path="res://scenes/attacks/slime_eat_souls.gd" id="1"]
+
+[node name="SlimeEatSouls" type="Node2D"]
+script = ExtResource("1")

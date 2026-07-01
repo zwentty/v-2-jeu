@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://bslimedash0a1"]
+
+[ext_resource type="Script" path="res://scenes/attacks/slime_dash_attack.gd" id="1"]
+
+[sub_resource type="CircleShape2D" id="1"]
+radius = 30.0
+
+[node name="SlimeDashAttack" type="Area2D"]
+collision_layer = 0
+collision_mask = 4
+monitoring = false
+script = ExtResource("1")
+
+[node name="Visual" type="Polygon2D" parent="."]
+visible = false
+color = Color(0.3, 0.8, 1, 0.5)
+polygon = PackedVector2Array(30, 0, 21.2, 21.2, 0, 30, -21.2, 21.2, -30, 0, -21.2, -21.2, 0, -30, 21.2, -21.2)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")
+disabled = true

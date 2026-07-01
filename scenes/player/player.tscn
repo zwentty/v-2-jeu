@@ -93,9 +93,6 @@ animations = [{
 [sub_resource type="CircleShape2D" id="1"]
 radius = 14.0
 
-[sub_resource type="CircleShape2D" id="2"]
-radius = 30.0
-
 [node name="Player" type="CharacterBody2D" unique_id=1916813690]
 collision_mask = 6
 script = ExtResource("1")
@@ -119,19 +116,6 @@ show_percentage = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1894520657]
 shape = SubResource("1")
-
-[node name="AttackArea" type="Area2D" parent="." unique_id=1520172084]
-collision_layer = 0
-collision_mask = 4
-monitoring = false
-
-[node name="AttackShape" type="CollisionShape2D" parent="AttackArea" unique_id=1961488372]
-shape = SubResource("2")
-
-[node name="AttackVisual" type="Polygon2D" parent="AttackArea" unique_id=1142667388]
-visible = false
-color = Color(1, 0.9, 0, 0.7)
-polygon = PackedVector2Array(30, 0, 29.4, 5.9, 27.7, 11.5, 25, 16.8, 21.2, 21.2, 16.8, 25, 11.5, 27.7, 5.9, 29.4, 0, 30, -5.9, 29.4, -11.5, 27.7, -16.8, 25, -21.2, 21.2, -25, 16.8, -27.7, 11.5, -29.4, 5.9, -30, 0, -29.4, -5.9, -27.7, -11.5, -25, -16.8, -21.2, -21.2, -16.8, -25, -11.5, -27.7, -5.9, -29.4, 0, -30, 5.9, -29.4, 11.5, -27.7, 16.8, -25, 21.2, -21.2, 25, -16.8, 27.7, -11.5, 29.4, -5.9)
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1041713644]
 limit_left = 0
