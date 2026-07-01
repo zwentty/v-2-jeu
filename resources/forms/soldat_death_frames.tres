@@ -1,0 +1,81 @@
+[gd_resource type="SpriteFrames" format=3 uid="uid://8buigstlstdu"]
+
+[ext_resource type="Texture2D" uid="uid://femtf7n5bpct" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Death-Sheet.png" id="1"]
+
+[sub_resource type="AtlasTexture" id="d0"]
+atlas = ExtResource("1")
+region = Rect2(0, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="d1"]
+atlas = ExtResource("1")
+region = Rect2(96, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="d2"]
+atlas = ExtResource("1")
+region = Rect2(192, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="d3"]
+atlas = ExtResource("1")
+region = Rect2(288, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="d4"]
+atlas = ExtResource("1")
+region = Rect2(384, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="d5"]
+atlas = ExtResource("1")
+region = Rect2(480, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="d6"]
+atlas = ExtResource("1")
+region = Rect2(576, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="d7"]
+atlas = ExtResource("1")
+region = Rect2(672, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="d8"]
+atlas = ExtResource("1")
+region = Rect2(768, 0, 96, 96)
+
+[sub_resource type="AtlasTexture" id="d9"]
+atlas = ExtResource("1")
+region = Rect2(864, 0, 96, 96)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("d0")
+}, {
+"duration": 1.0,
+"texture": SubResource("d1")
+}, {
+"duration": 1.0,
+"texture": SubResource("d2")
+}, {
+"duration": 1.0,
+"texture": SubResource("d3")
+}, {
+"duration": 1.0,
+"texture": SubResource("d4")
+}, {
+"duration": 1.0,
+"texture": SubResource("d5")
+}, {
+"duration": 1.0,
+"texture": SubResource("d6")
+}, {
+"duration": 1.0,
+"texture": SubResource("d7")
+}, {
+"duration": 1.0,
+"texture": SubResource("d8")
+}, {
+"duration": 1.0,
+"texture": SubResource("d9")
+}],
+"loop": false,
+"name": &"death",
+"speed": 8.0
+}]

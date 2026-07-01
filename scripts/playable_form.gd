@@ -15,6 +15,10 @@ class_name PlayableForm
 ## Animations du sprite de la forme (idle, walk, etc.).
 @export var sprite_frames: SpriteFrames
 
+## Animations de MORT de la forme (doit contenir une anim "death", non bouclée).
+## Optionnel : si absent, aucune animation de mort n'est jouée pour cette forme.
+@export var death_frames: SpriteFrames
+
 ## Scène de l'attaque principale instanciée par cette forme.
 @export var attack_scene: PackedScene
 

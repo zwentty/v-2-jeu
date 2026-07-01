@@ -140,6 +140,11 @@ func reset_for_new_run() -> void:
 	_emit_changed()
 
 
+# Forme actuellement incarnée (contenu du slot actif). Jamais null en usage normal.
+func get_active_form() -> PlayableForm:
+	return slots[active_index]
+
+
 # Vrai si le slot actif n'est PAS un slime de base (le joueur est transformé).
 func is_transformed() -> bool:
 	if base_form == null:

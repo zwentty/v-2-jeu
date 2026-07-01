@@ -1,0 +1,61 @@
+[gd_scene format=3 uid="uid://cdeathseq0001"]
+
+[ext_resource type="Script" path="res://scenes/menus/death_sequence.gd" id="1"]
+[ext_resource type="Shader" path="res://scenes/menus/death_iris.gdshader" id="2"]
+
+[sub_resource type="ShaderMaterial" id="iris_mat"]
+shader = ExtResource("2")
+shader_parameter/radius = 2.5
+shader_parameter/center = Vector2(0.5, 0.5)
+shader_parameter/softness = 0.05
+
+; --- Racine : CanvasLayer au-dessus de tout (layer 100), ALWAYS pendant la pause ---
+[node name="DeathSequence" type="CanvasLayer"]
+layer = 100
+process_mode = 3
+script = ExtResource("1")
+
+; --- Iris plein écran : shader disque transparent + noir autour ---
+[node name="IrisRect" type="ColorRect" parent="."]
+material = SubResource("iris_mat")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+; --- Conteneur centré pour le texte + bouton ---
+[node name="Center" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="Center"]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+; --- « Game Over » (opacité 0 au départ, révélé par la timeline) ---
+[node name="GameOverLabel" type="Label" parent="Center/VBox"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 72
+text = "Game Over"
+horizontal_alignment = 1
+
+; --- Bouton « Rejouer » (opacité 0 + désactivé au départ) ---
+[node name="RejouerButton" type="Button" parent="Center/VBox"]
+modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 28
+disabled = true
+text = "Rejouer"
+
+; --- Orchestrateur : la timeline "death" est construite par code (_build_animation) ---
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
