@@ -91,9 +91,9 @@ func _physics_process(delta: float) -> void:
 	# effet (elle ne s'applique qu'à la frame suivante).
 	if _is_dying:
 		return
-	_handle_attack_dash(delta)
-	_handle_stun(delta)
-	if not is_attack_dashing and not is_stunned:
+	# Pendant qu'une capacité pilote le joueur (dash, stun…), il ne bouge pas de
+	# lui-même : la capacité appelle alors move_and_slide à sa place.
+	if not control_locked:
 		_handle_movement()
 	_handle_invincibility(delta)
 	_update_visual()
@@ -288,9 +288,11 @@ func _play_death_animation() -> void:
 	if frames == null or not frames.has_animation(DEATH_ANIM):
 		return
 
-	# Coupe l'attaque-dash / stun en cours pour ne pas ré-écraser le sprite.
-	is_attack_dashing = false
-	is_stunned = false
+	# Rend au joueur le contrôle qu'une capacité aurait pris (dash/stun) pour ne
+	# pas ré-écraser le sprite de mort. La scène de capacité, elle, se fige avec
+	# la pause du jeu déclenchée par la cinématique (PROCESS_MODE hérité).
+	control_locked = false
+	is_intangible = false
 	animated_sprite.modulate = Color.WHITE
 	animated_sprite.flip_h = false
 	animated_sprite.process_mode = Node.PROCESS_MODE_ALWAYS

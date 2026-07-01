@@ -5,7 +5,6 @@
 ; toute autre forme — plus rien n'est codé en dur dans player.gd.
 
 [gd_resource type="Resource" script_class="PlayableForm" load_steps=8 format=3 uid="uid://cbaseform0000a"]
-[gd_resource type="Resource" script_class="PlayableForm" format=3 uid="uid://dkulep5dfk44a"]
 
 [ext_resource type="Script" uid="uid://epf0fjhe3k8x" path="res://scripts/playable_form.gd" id="1"]
 [ext_resource type="Resource" uid="uid://cbv1vgsys7dr7" path="res://resources/forms/base_slime_stats.tres" id="2"]
