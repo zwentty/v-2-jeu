@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3 uid="uid://cruntimer0001"]
+
+[ext_resource type="Script" path="res://scenes/ui/run_timer.gd" id="1"]
+
+; --- Autoload : CanvasLayer au-dessus du HUD (layer 10), sous la cinématique (100) ---
+[node name="RunTimer" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1")
+
+; --- Label du compte à rebours, ancré en HAUT À DROITE ---
+[node name="Label" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -140.0
+offset_top = 12.0
+offset_right = -16.0
+offset_bottom = 52.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 32
+text = "3:00"
+horizontal_alignment = 2

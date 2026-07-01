@@ -1,8 +1,4 @@
-; SpriteFrames de la forme "Soldat" (réutilise les feuilles du Human_Soldier,
-; mêmes idle/walk que le sprite actuel du joueur). Version dédiée joueur en
-; ressource autonome pour être référencée par soldat_form.tres.
-
-[gd_resource type="SpriteFrames" load_steps=13 format=3 uid="uid://csoldatframes0a"]
+[gd_resource type="SpriteFrames" format=3 uid="uid://8buii6tepm23"]
 
 [ext_resource type="Texture2D" uid="uid://cfrtaj87vpxgb" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Idle-Sheet.png" id="1"]
 [ext_resource type="Texture2D" uid="uid://b5j1vcir5ebxu" path="res://assets/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Human_Soldier_Sword_Shield/With_Shadows/Human_Soldier_Sword_Shield_Walk-Sheet.png" id="2"]

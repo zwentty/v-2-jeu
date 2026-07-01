@@ -1,13 +1,7 @@
-; Stats de la forme de base (slime nu). Doivent refléter le slime « par défaut »
-; (mêmes valeurs que le joueur de base : 25 PV, vitesse 200).
+[gd_resource type="Resource" script_class="StatBlock" format=3 uid="uid://cbv1vgsys7dr7"]
 
-[gd_resource type="Resource" script_class="StatBlock" load_steps=2 format=3 uid="uid://cbaseslimestat0a"]
-
-[ext_resource type="Script" path="res://scripts/stat_block.gd" id="1"]
+[ext_resource type="Script" uid="uid://dn174yfdioky2" path="res://scripts/stat_block.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
 max_health = 5.0
-move_speed = 200.0
-damage = 3.0
-weight = 1.0

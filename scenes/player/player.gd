@@ -80,6 +80,12 @@ func _ready() -> void:
 	z_index = 2
 	$AttackArea.body_entered.connect(_on_attack_hit)
 
+	# Fin du compte à rebours de run (GameState) -> le joueur meurt.
+	var gs := get_node_or_null("/root/GameState")
+	if gs != null and gs.has_signal("run_time_expired") \
+			and not gs.run_time_expired.is_connected(_on_run_time_expired):
+		gs.run_time_expired.connect(_on_run_time_expired)
+
 # -----------------------------------------------------------------------------
 # _get_inventory()
 # Récupère la référence à l'inventaire (lazy loading)
@@ -269,6 +275,10 @@ func take_damage(amount: int) -> void:
 # -----------------------------------------------------------------------------
 # _die()
 # -----------------------------------------------------------------------------
+# Fin du compte à rebours de run : le joueur meurt (réutilise la cinématique).
+func _on_run_time_expired() -> void:
+	_die()
+
 func _die() -> void:
 	if _is_dying:
 		return

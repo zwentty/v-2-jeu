@@ -1,10 +1,9 @@
 [gd_scene format=4 uid="uid://dbs1080blvp01"]
 
 [ext_resource type="PackedScene" uid="uid://dxfaewnxhoqg" path="res://scenes/player/player.tscn" id="1"]
-[ext_resource type="PackedScene" uid="uid://btransformui00a1" path="res://scenes/ui/transform_ui.tscn" id="ui_transform"]
 [ext_resource type="PackedScene" uid="uid://ce4ongkgfv5d8" path="res://scenes/enemy/enemy.tscn" id="2"]
 [ext_resource type="Texture2D" uid="uid://bueuvgey4jtqm" path="res://assets/Sprout Lands - UI Pack - Basic pack/Sprout Lands - UI Pack - Basic pack/emojis-free/Emoji_Spritesheet_Free.png" id="2_v5dby"]
-[ext_resource type="Script" uid="uid://c0mxqx4d6dxfs" path="res://scenes/world/room.gd" id="3"]
+[ext_resource type="Script" uid="uid://1jgoxqlyeuh5" path="res://scenes/world/room.gd" id="3"]
 [ext_resource type="Texture2D" uid="uid://nurr0sddqpwa" path="res://assets/Sprout Lands - Sprites - Basic pack/Sprout Lands - Sprites - Basic pack/Tilesets/Grass.png" id="3_bq33v"]
 [ext_resource type="PackedScene" uid="uid://dmciy24fnm8cw" path="res://scenes/enemy/ranged_enemy.tscn" id="4"]
 [ext_resource type="Texture2D" uid="uid://dw6iq3dr5pn7i" path="res://assets/Sprout Lands - Sprites - Basic pack/Sprout Lands - Sprites - Basic pack/Tilesets/Hills.png" id="4_j2gmx"]
@@ -28,6 +27,7 @@
 [ext_resource type="Texture2D" uid="uid://81fitgbyw3ia" path="res://assets/Sprout Lands - Sprites - Basic pack/Sprout Lands - Sprites - Basic pack/Tilesets/Tilled_Dirt_Wide_v2.png" id="15_fymcc"]
 [ext_resource type="Texture2D" uid="uid://b15p8ovb10k01" path="res://assets/Sprout Lands - Sprites - Basic pack/Sprout Lands - Sprites - Basic pack/Tilesets/Fences.png" id="16_lbnhc"]
 [ext_resource type="PackedScene" uid="uid://b8door0room01" path="res://scenes/world/door.tscn" id="door"]
+[ext_resource type="PackedScene" uid="uid://dq6vrkw4mfgxy" path="res://scenes/ui/transform_ui.tscn" id="ui_transform"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_t5ptc"]
 texture = ExtResource("2_v5dby")
@@ -1145,7 +1145,7 @@ position = Vector2(1639, 724)
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=644989842]
 
-[node name="TransformUI" parent="UILayer" instance=ExtResource("ui_transform")]
+[node name="TransformUI" parent="UILayer" unique_id=1882501941 instance=ExtResource("ui_transform")]
 
 [node name="PauseButton" type="Button" parent="UILayer" unique_id=625786751]
 offset_left = 10.0
